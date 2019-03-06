@@ -14,7 +14,7 @@ ___
 
 ### Usage
 ```
-fstat: Get file info for a list of files
+fstat: Get info for a list of files across multiple directories
 
 usage: fstat [options] [filename|or blank for STDIN]
 
