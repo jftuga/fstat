@@ -21,7 +21,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 possibly use go channels to improve performance
 append optional summary at end in separate table
-add commas to file sizes
 convert file sizes to MB
 add option for milliseconds for time stamps
 
@@ -42,7 +41,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "1.0.1"
+const version = "1.1.0"
 
 type FileStat struct {
     Name string
@@ -129,12 +128,20 @@ func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     return allEntries
 }
 
-func RenderAllEntries(allEntries []FileStat) {
+func RenderAllEntries(allEntries []FileStat, addCommas bool) {
 
     var allRows [][]string
     var e FileStat
+    var fsize string
+
     for _,e = range allEntries {
-        row := []string{fmt.Sprintf("%s",e.ModTime)[:19], fmt.Sprintf("%d",e.Size), fmt.Sprintf("%s",e.FileType), e.FullName}
+        if addCommas {
+            fsize = RenderInteger("#,###.",e.Size)
+        } else {
+            fsize = fmt.Sprintf("%d",e.Size)
+        }
+        //row := []string{fmt.Sprintf("%s",e.ModTime)[:19], fmt.Sprintf("%d",e.Size), fmt.Sprintf("%s",e.FileType), e.FullName}
+        row := []string{fmt.Sprintf("%s",e.ModTime)[:19], fsize, fmt.Sprintf("%s",e.FileType), e.FullName}
         allRows = append(allRows, row)
     }
 
@@ -187,11 +194,12 @@ func main() {
     argsSortName := flag.Bool("n", false, "sort by file name")
     argsSortNameDesc := flag.Bool("N", false, "sort by file name, reverse alphabetical order")
 
-    argsSortNameCaseInsen := flag.Bool("c", false, "case-insensitive sort by file name")
-    argsSortNameCaseInsenDesc := flag.Bool("C", false, "case-insensitive sort by file name, reverse alphabetical order")
+    argsSortNameCaseInsen := flag.Bool("i", false, "case-insensitive sort by file name")
+    argsSortNameCaseInsenDesc := flag.Bool("I", false, "case-insensitive sort by file name, reverse alphabetical order")
 
     argsVersion := flag.Bool("v", false, "show program version and then exit")
     argsQuiet := flag.Bool("q", false, "do not display file errors")
+    argsCommas := flag.Bool("c", false, "add comma thousands separator to file sizes")
 
     flag.Parse()
     if *argsVersion {
@@ -218,6 +226,6 @@ func main() {
 
     allEntries := GetFileInfo(input, *argsQuiet)
     SortAllEntries(allEntries,argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
-    RenderAllEntries(allEntries)
+    RenderAllEntries(allEntries, *argsCommas)
 }
 
