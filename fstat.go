@@ -20,7 +20,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /* TODO
 
 possibly use go channels to improve performance
-append optional summary at end in separate table
 
 */
 
@@ -126,14 +125,18 @@ func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     return allEntries
 }
 
-func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool) {
+func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool) {
 
     var allRows [][]string
     var e FileStat
     var fsize string
     var modtime string
+    var totalFileSize int64
 
     for _,e = range allEntries {
+        if includeTotals {
+            totalFileSize += e.Size
+        }
         if convertToMiB {
             e.Size /= 1048576
         }
@@ -152,6 +155,18 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         }
 
         allRows = append(allRows, []string{modtime, fsize, fmt.Sprintf("%s",e.FileType), e.FullName})
+    }
+
+    if includeTotals {
+        tsize := fmt.Sprintf("%d",totalFileSize)
+        if convertToMiB {
+            totalFileSize /= 1048576
+            tsize = fmt.Sprintf("%d",totalFileSize)
+        }
+        if addCommas {
+            tsize = RenderInteger("#,###.",totalFileSize)
+        }
+        allRows = append(allRows, []string{"", tsize, "?", fmt.Sprintf("(total size for %d files)", len(allRows))})
     }
 
     table := tablewriter.NewWriter(os.Stdout)
@@ -211,6 +226,7 @@ func main() {
     argsCommas := flag.Bool("c", false, "add comma thousands separator to file sizes")
     argsMebibytes := flag.Bool("m", false, "convert file sizes to mebibytes")
     argsMilliseconds := flag.Bool("M", false, "add milliseconds to file time stamps")
+    argsTotals := flag.Bool("t", false, "append total file size and file count")
 
     flag.Parse()
     if *argsVersion {
@@ -237,6 +253,6 @@ func main() {
 
     allEntries := GetFileInfo(input, *argsQuiet)
     SortAllEntries(allEntries,argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
-    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds)
+    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals)
 }
 
