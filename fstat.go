@@ -234,7 +234,8 @@ func main() {
             pgmName = os.Args[0][2:]
         }
         fmt.Fprintf(os.Stderr, "\n%s: Get info for a list of files across multiple directories\n", pgmName)
-        fmt.Fprintf(os.Stderr, "usage: %s [options] [filename|or blank for STDIN]\n\n", pgmName)
+        fmt.Fprintf(os.Stderr, "usage: %s [options] [filename|or blank for STDIN]\n", pgmName)
+        fmt.Fprintf(os.Stderr, "       (filename should contain a list of files)\n\n")
         flag.PrintDefaults()
     }
 
