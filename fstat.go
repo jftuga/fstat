@@ -38,7 +38,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "1.1.0"
+const version = "1.1.1"
 
 type FileStat struct {
     Name string
@@ -227,6 +227,16 @@ func main() {
     argsMebibytes := flag.Bool("m", false, "convert file sizes to mebibytes")
     argsMilliseconds := flag.Bool("M", false, "add milliseconds to file time stamps")
     argsTotals := flag.Bool("t", false, "append total file size and file count")
+
+    flag.Usage = func() {
+        pgmName := os.Args[0]
+        if(strings.HasPrefix(os.Args[0],"./")) {
+            pgmName = os.Args[0][2:]
+        }
+        fmt.Fprintf(os.Stderr, "\n%s: Get info for a list of files across multiple directories\n", pgmName)
+        fmt.Fprintf(os.Stderr, "usage: %s [options] [filename|or blank for STDIN]\n\n", pgmName)
+        flag.PrintDefaults()
+    }
 
     flag.Parse()
     if *argsVersion {
