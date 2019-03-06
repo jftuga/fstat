@@ -26,6 +26,8 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
+const version = "1.0.0"
+
 type FileStat struct {
     Name string
     FullName string
@@ -170,7 +172,14 @@ func main() {
     argsSortNameCaseInsen := flag.Bool("c", false, "case-insensitive sort by file name")
     argsSortNameCaseInsenDesc := flag.Bool("C", false, "case-insensitive sort by file name, reverse alphabetically")
 
+    argsVersion := flag.Bool("v", false, "show program version and then exit")
+
     flag.Parse()
+    if *argsVersion {
+        fmt.Fprintf(os.Stderr,"version %s\n", version)
+        os.Exit(1)
+    }
+
     ValidateArgs(argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
     args := flag.Args()
 
