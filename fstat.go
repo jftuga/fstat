@@ -19,7 +19,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 /* TODO
 
--q quiet, suppress errors
 possibly use go channels to improve performance
 append optional summary at end in separate table
 add commas to file sizes
@@ -100,7 +99,7 @@ func sortNameCaseInsensitive(entry []FileStat, ascending bool) {
     })
 }
 
-func GetFileInfo(input *bufio.Scanner) ([]FileStat) {
+func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     var allEntries []FileStat
     fname := ""
 
@@ -109,7 +108,9 @@ func GetFileInfo(input *bufio.Scanner) ([]FileStat) {
         f,err := os.Lstat(fname)
 
         if err != nil {
-            fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+            if !quiet {
+                fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+            }
             continue
         }
 
@@ -181,15 +182,16 @@ func main() {
     argsSortSizeDesc := flag.Bool("S", false, "sort by file size, descending")
 
     argsSortModTime := flag.Bool("d", false, "sort by file modified date")
-    argsSortModTimeDesc := flag.Bool("D", false, "sort by file modified date, reverse chronologically")
+    argsSortModTimeDesc := flag.Bool("D", false, "sort by file modified date, newest first")
 
     argsSortName := flag.Bool("n", false, "sort by file name")
-    argsSortNameDesc := flag.Bool("N", false, "sort by file name, reverse alphabetically")
+    argsSortNameDesc := flag.Bool("N", false, "sort by file name, reverse alphabetical order")
 
     argsSortNameCaseInsen := flag.Bool("c", false, "case-insensitive sort by file name")
-    argsSortNameCaseInsenDesc := flag.Bool("C", false, "case-insensitive sort by file name, reverse alphabetically")
+    argsSortNameCaseInsenDesc := flag.Bool("C", false, "case-insensitive sort by file name, reverse alphabetical order")
 
     argsVersion := flag.Bool("v", false, "show program version and then exit")
+    argsQuiet := flag.Bool("q", false, "do not display file errors")
 
     flag.Parse()
     if *argsVersion {
@@ -214,7 +216,7 @@ func main() {
         input = bufio.NewScanner(file)
     }
 
-    allEntries := GetFileInfo(input)
+    allEntries := GetFileInfo(input, *argsQuiet)
     SortAllEntries(allEntries,argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
     RenderAllEntries(allEntries)
 }
