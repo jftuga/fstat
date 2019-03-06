@@ -21,7 +21,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 possibly use go channels to improve performance
 append optional summary at end in separate table
-convert file sizes to MB
 add option for milliseconds for time stamps
 
 */
@@ -128,13 +127,16 @@ func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     return allEntries
 }
 
-func RenderAllEntries(allEntries []FileStat, addCommas bool) {
+func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool) {
 
     var allRows [][]string
     var e FileStat
     var fsize string
 
     for _,e = range allEntries {
+        if convertToMiB {
+            e.Size /= 1048576
+        }
         if addCommas {
             fsize = RenderInteger("#,###.",e.Size)
         } else {
@@ -200,6 +202,7 @@ func main() {
     argsVersion := flag.Bool("v", false, "show program version and then exit")
     argsQuiet := flag.Bool("q", false, "do not display file errors")
     argsCommas := flag.Bool("c", false, "add comma thousands separator to file sizes")
+    argsMebibytes := flag.Bool("m", false, "convert file sizes to mebibytes")
 
     flag.Parse()
     if *argsVersion {
@@ -226,6 +229,6 @@ func main() {
 
     allEntries := GetFileInfo(input, *argsQuiet)
     SortAllEntries(allEntries,argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
-    RenderAllEntries(allEntries, *argsCommas)
+    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes)
 }
 
