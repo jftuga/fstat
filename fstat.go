@@ -1,4 +1,13 @@
 
+/* TODO
+
+-v version 
+-q quiet, suppress errors
+use chanels to improve performance
+
+*/
+
+
 package main
 
 import (
