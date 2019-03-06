@@ -19,15 +19,20 @@ fstat: Get file info for a list of files
 usage: fstat [options] [filename|or blank for STDIN]
 
 Usage of fstat:
-  -C	case-insensitive sort by file name, reverse alphabetically
-  -D	sort by file modified date, reverse chronologically
-  -N	sort by file name, reverse alphabetically
+  -D	sort by file modified date, newest first
+  -I	case-insensitive sort by file name, reverse alphabetical order
+  -M	add milliseconds to file time stamps
+  -N	sort by file name, reverse alphabetical order
   -S	sort by file size, descending
-  -c	case-insensitive sort by file name
+  -c	add comma thousands separator to file sizes
   -d	sort by file modified date
+  -i	case-insensitive sort by file name
+  -m	convert file sizes to mebibytes
   -n	sort by file name
+  -q	do not display file errors
   -s	sort by file size
-
+  -t	append total file size and file count
+  -v	show program version and then exit
 ```
 
 ___
