@@ -2,7 +2,7 @@
 
 `fstat` is useful when you need to obtain file names, sizes, and timestamps across multiple directories.  You can also sort by timestamp, file size, and file name (both case-sensitive and case-insensitive). 
 
-For the `TYPE` column:
+For the `TYPE` column (see examples):
 
 * `F` represents regular file
 * `D` represents directory
