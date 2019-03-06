@@ -21,7 +21,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 possibly use go channels to improve performance
 append optional summary at end in separate table
-add option for milliseconds for time stamps
 
 */
 
@@ -127,11 +126,12 @@ func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     return allEntries
 }
 
-func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool) {
+func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool) {
 
     var allRows [][]string
     var e FileStat
     var fsize string
+    var modtime string
 
     for _,e = range allEntries {
         if convertToMiB {
@@ -142,9 +142,16 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool) 
         } else {
             fsize = fmt.Sprintf("%d",e.Size)
         }
-        //row := []string{fmt.Sprintf("%s",e.ModTime)[:19], fmt.Sprintf("%d",e.Size), fmt.Sprintf("%s",e.FileType), e.FullName}
-        row := []string{fmt.Sprintf("%s",e.ModTime)[:19], fsize, fmt.Sprintf("%s",e.FileType), e.FullName}
-        allRows = append(allRows, row)
+        if addMilliseconds {
+            modtime = fmt.Sprintf("%s",e.ModTime)[:23]
+            if ' ' == modtime[19] {
+                modtime = fmt.Sprintf("%s.000", modtime[:19])
+            }
+        } else {
+            modtime = fmt.Sprintf("%s",e.ModTime)[:19]
+        }
+
+        allRows = append(allRows, []string{modtime, fsize, fmt.Sprintf("%s",e.FileType), e.FullName})
     }
 
     table := tablewriter.NewWriter(os.Stdout)
@@ -203,6 +210,7 @@ func main() {
     argsQuiet := flag.Bool("q", false, "do not display file errors")
     argsCommas := flag.Bool("c", false, "add comma thousands separator to file sizes")
     argsMebibytes := flag.Bool("m", false, "convert file sizes to mebibytes")
+    argsMilliseconds := flag.Bool("M", false, "add milliseconds to file time stamps")
 
     flag.Parse()
     if *argsVersion {
@@ -229,6 +237,6 @@ func main() {
 
     allEntries := GetFileInfo(input, *argsQuiet)
     SortAllEntries(allEntries,argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
-    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes)
+    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds)
 }
 
