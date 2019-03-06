@@ -1,6 +1,6 @@
 project_name: fstat
 build:
-  main: fstat.go
+  main: .
   binary: fstat
   env:
     - CGO_ENABLED=0
