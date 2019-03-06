@@ -17,6 +17,7 @@ ___
 fstat: Get info for a list of files across multiple directories
 
 usage: fstat [options] [filename|or blank for STDIN]
+       filename should contain a list of files
 
 Usage of fstat:
   -D	sort by file modified date, newest first
