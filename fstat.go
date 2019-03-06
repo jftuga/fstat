@@ -4,6 +4,10 @@
 -v version 
 -q quiet, suppress errors
 use chanels to improve performance
+append optional summary at end in separate table
+add commas to file sizes
+convert file sizes to MB
+add option for milliseconds for time stamps
 
 */
 
