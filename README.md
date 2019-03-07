@@ -85,6 +85,16 @@ user@debian:~$ find /usr/share -name '*exec*' | fstat -s
 +---------------------+-------+------+-----------------------------------------------------+
 ```
 
+Running `fstat` on MacOS, using `-S -c` to sort by file size decending, adding commas to file size
+```
+macbook5:fstat john$ find /Applications/Safari.app/Contents/ -name G\*nib|./fstat -S -c
++---------------------+--------+------+--------------------------------------------------------------------------------+
+|      MOD TIME       |  SIZE  | TYPE |                                      NAME                                      |
++---------------------+--------+------+--------------------------------------------------------------------------------+
+| 2019-01-14 21:29:46 | 34,759 | F    | /Applications/Safari.app/Contents//Resources/Base.lproj/GeneralPreferences.nib |
+| 2019-01-14 21:44:24 | 31,084 | F    | /Applications/Safari.app/Contents//Resources/ko.lproj/GeneralPreferences.nib   |
++---------------------+--------+------+--------------------------------------------------------------------------------+
+```
 
 Running `fstat` on Linux, using `-D` to sort by modification time, newest timestamp first
 ```
