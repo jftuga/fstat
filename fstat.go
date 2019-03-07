@@ -17,13 +17,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 */
 
-/* TODO
-
-possibly use go channels to improve performance
-
-*/
-
-
 package main
 
 import (
@@ -38,7 +31,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "1.1.1"
+const version = "1.2.0"
 
 type FileStat struct {
     Name string
@@ -125,8 +118,7 @@ func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     return allEntries
 }
 
-func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool) {
-
+func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool) {
     var allRows [][]string
     var e FileStat
     var fsize string
@@ -134,6 +126,15 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
     var totalFileSize int64
 
     for _,e = range allEntries {
+	if onlyFiles && "F" != e.FileType {
+		continue
+	}
+	if onlyDirs && "D" != e.FileType {
+		continue
+	}
+	if onlyLinks && "L" != e.FileType {
+		continue
+	}
         if includeTotals {
             totalFileSize += e.Size
         }
@@ -178,7 +179,7 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
     }
 }
 
-func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *bool, argsSortModTimeDesc *bool, argsSortName *bool, argsSortNameDesc *bool, argsSortNameCaseInsen *bool, argsSortNameCaseInsenDesc *bool ) {
+func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *bool, argsSortModTimeDesc *bool, argsSortName *bool, argsSortNameDesc *bool, argsSortNameCaseInsen *bool, argsSortNameCaseInsenDesc *bool, argsOnlyFiles *bool, argsOnlyDirs *bool, argsOnlyLinks *bool ) {
 
     count := 0
     if *argsSortSize { count++ }
@@ -191,7 +192,17 @@ func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *b
     if *argsSortNameCaseInsenDesc { count++ }
 
     if count > 1 {
-        fmt.Fprintf(os.Stderr,"Error: only one sorting argument can be given.\n\n")
+        fmt.Fprintf(os.Stderr,"Error: only one 'sort' argument can be given.\n\n")
+        os.Exit(2)
+    }
+
+    count = 0
+    if *argsOnlyFiles { count++ }
+    if *argsOnlyDirs { count++ }
+    if *argsOnlyLinks { count++ }
+
+    if count > 1 {
+        fmt.Fprintf(os.Stderr,"Error: only one 'only' argument can be given.\n\n")
         os.Exit(2)
     }
 }
@@ -228,6 +239,10 @@ func main() {
     argsMilliseconds := flag.Bool("M", false, "add milliseconds to file time stamps")
     argsTotals := flag.Bool("t", false, "append total file size and file count")
 
+    argsOnlyFiles := flag.Bool("of", false, "only display files")
+    argsOnlyDirs := flag.Bool("od", false, "only display directories")
+    argsOnlyLinks := flag.Bool("ol", false, "only display symbolic links")
+
     flag.Usage = func() {
         pgmName := os.Args[0]
         if(strings.HasPrefix(os.Args[0],"./")) {
@@ -245,7 +260,7 @@ func main() {
         os.Exit(1)
     }
 
-    ValidateArgs(argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
+    ValidateArgs(argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc, argsOnlyFiles, argsOnlyDirs, argsOnlyLinks)
     args := flag.Args()
 
     var input *bufio.Scanner
@@ -264,6 +279,6 @@ func main() {
 
     allEntries := GetFileInfo(input, *argsQuiet)
     SortAllEntries(allEntries,argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
-    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals)
+    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks)
 }
 
