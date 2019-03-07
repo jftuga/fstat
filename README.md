@@ -19,7 +19,6 @@ fstat: Get info for a list of files across multiple directories
 usage: fstat [options] [filename|or blank for STDIN]
        filename should contain a list of files
 
-Usage of fstat:
   -D	sort by file modified date, newest first
   -I	case-insensitive sort by file name, reverse alphabetical order
   -M	add milliseconds to file time stamps
@@ -30,6 +29,12 @@ Usage of fstat:
   -i	case-insensitive sort by file name
   -m	convert file sizes to mebibytes
   -n	sort by file name
+  -od
+    	only display directories
+  -of
+    	only display files
+  -ol
+    	only display symbolic links
   -q	do not display file errors
   -s	sort by file size
   -t	append total file size and file count
