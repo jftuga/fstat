@@ -10,7 +10,7 @@ Get info for a list of files across multiple directories
 To compile:
 go build -ldflags="-s -w" fstat.go render_number.go
 
-MIT License; Copyright (c) 2018 John Taylor
+MIT License; Copyright (c) 2019 John Taylor
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -31,7 +31,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "1.2.0"
+const version = "1.2.1"
 
 type FileStat struct {
     Name string
@@ -41,7 +41,12 @@ type FileStat struct {
     FileType string
 }
 
-
+/*
+sortSize sorts the FileStat slice by file sizes
+If ascending is true, the list is sorted from smallest to largest
+Otherwise, largest to smallest
+cmd line options: -s and -S
+*/
 func sortSize(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
         if entry[i].Size > entry[j].Size {
@@ -50,11 +55,17 @@ func sortSize(entry []FileStat, ascending bool) {
         if entry[i].Size < entry[j].Size {
             return ascending
         }
-        // when multiple lines have the same Size, then alphabetize these lines
+        // when multiple files have the same Size, then alphabetize by file name
         return entry[i].Name < entry[j].Name
     })
 }
 
+/*
+sortModTime sorts the FileStat slice by file modification time
+If ascending is true, the list is sorted from oldest to newest
+Otherwise, newest to oldest
+cmd line options: -d and -D
+*/
 func sortModTime(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
         if entry[i].ModTime.After(entry[j].ModTime) {
@@ -63,11 +74,17 @@ func sortModTime(entry []FileStat, ascending bool) {
         if entry[i].ModTime.Before(entry[j].ModTime) {
             return ascending
         }
-        // when multiple lines have the same Size, then alphabetize these lines
+        // when multiple files have the same Mod Time, then alphabetize by file name
         return entry[i].Name < entry[j].Name
     })
 }
 
+/*
+sortName sorts the FileStat slice by file name
+If ascending is true, the list is sorted in alphabetical order
+Otherwise, reverse alphabetical order
+cmd line options: -n and -N
+*/
 func sortName(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
         if ascending {
@@ -78,6 +95,13 @@ func sortName(entry []FileStat, ascending bool) {
     })
 }
 
+/*
+sortNameCaseInsensitive sorts the FileStat slice by file name, ignoring case
+This is done by making all names lower case before comparing names
+If ascending is true, the list is sorted in alphabetical order
+Otherwise, reverse alphabetical order
+cmd line options: -i and -I
+*/
 func sortNameCaseInsensitive(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
         if ascending {
@@ -88,6 +112,18 @@ func sortNameCaseInsensitive(entry []FileStat, ascending bool) {
     })
 }
 
+/*
+GetFileInfo will read a list of file names, get the file's timestamp and size,
+and create the allEntries slice
+
+Args:
+    input: a list of file names, either from a file given on cmd line or read from STDIN
+
+    quiet: when set, errors are not reported to STDERR
+
+Returns:
+    a slice of type FileStat containing all files that were successfully examined
+*/
 func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     var allEntries []FileStat
     fname := ""
@@ -118,6 +154,26 @@ func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
     return allEntries
 }
 
+/*
+RenderAllEntries creates a table of all given files which are sorted from the given sort options
+
+Args:
+    allEntries: a slice of all files, modification times, sizes, and if the entry is a file, directory, or symbolic link
+
+    addCommas: when set, add a comma as a thousands separator (-c cmd line option)
+
+    convertToMiB: when set, output file size in Mebibytes (-m cmd line option)
+
+    addMilliseconds: when set, output modification times to include thousands of a second (-M cmd line option)
+
+    includeTotals: when set, append a line include summed file sizes and number of files (-t cmd line option)
+
+    onlyFiles: when set, only ouput files and exclude directories, symbolic links (-of cmd line option)
+
+    onlyDirs: when set, only ouput directories and exclude files, symbolic links (-od cmd line option)
+
+    onlyLinks: when set, only ouput symbolic links and exclude files, directories (-ol cmd line option)
+*/
 func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool) {
     var allRows [][]string
     var e FileStat
@@ -167,7 +223,7 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         if addCommas {
             tsize = RenderInteger("#,###.",totalFileSize)
         }
-        allRows = append(allRows, []string{"", tsize, "?", fmt.Sprintf("(total size for %d files)", len(allRows))})
+        allRows = append(allRows, []string{"", tsize, " ", fmt.Sprintf("(total size for %d files)", len(allRows))})
     }
 
     table := tablewriter.NewWriter(os.Stdout)
@@ -179,8 +235,12 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
     }
 }
 
+/*
+ValidateArgs verify all command line arguments.
+It will not allow multiple sort options (such as -s and -d)
+It will now allow multiple 'only' options (such as -of and -od)
+*/
 func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *bool, argsSortModTimeDesc *bool, argsSortName *bool, argsSortNameDesc *bool, argsSortNameCaseInsen *bool, argsSortNameCaseInsenDesc *bool, argsOnlyFiles *bool, argsOnlyDirs *bool, argsOnlyLinks *bool ) {
-
     count := 0
     if *argsSortSize { count++ }
     if *argsSortSizeDesc { count++ }
@@ -207,18 +267,25 @@ func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *b
     }
 }
 
+/*
+SortAllEntries is used to determine which sorting function to use
+At this point, (at most) only one of the *argsSortXXX variables will be true
+*/
 func SortAllEntries(allEntries []FileStat, argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *bool, argsSortModTimeDesc *bool, argsSortName *bool, argsSortNameDesc *bool, argsSortNameCaseInsen *bool, argsSortNameCaseInsenDesc *bool ) {
-
-    if *argsSortSize { sortSize(allEntries,true) }
-    if *argsSortSizeDesc { sortSize(allEntries,false) }
-    if *argsSortModTime { sortModTime(allEntries,true) }
-    if *argsSortModTimeDesc { sortModTime(allEntries,false) }
-    if *argsSortName { sortName(allEntries,true) }
-    if *argsSortNameDesc { sortName(allEntries,false) }
-    if *argsSortNameCaseInsen { sortNameCaseInsensitive(allEntries,true) }
-    if *argsSortNameCaseInsenDesc { sortNameCaseInsensitive(allEntries,false) }
+    if *argsSortSize { sortSize(allEntries,true); return }
+    if *argsSortSizeDesc { sortSize(allEntries,false); return }
+    if *argsSortModTime { sortModTime(allEntries,true); return }
+    if *argsSortModTimeDesc { sortModTime(allEntries,false); return }
+    if *argsSortName { sortName(allEntries,true); return }
+    if *argsSortNameDesc { sortName(allEntries,false); return }
+    if *argsSortNameCaseInsen { sortNameCaseInsensitive(allEntries,true); return }
+    if *argsSortNameCaseInsenDesc { sortNameCaseInsensitive(allEntries,false); return }
 }
 
+/*
+main processes & validates cmd line arguments, reads in file names thus creating allEntries
+Next, it sorts the entries and finally renders the results to STDOUT
+*/
 func main() {
     argsSortSize := flag.Bool("s", false, "sort by file size")
     argsSortSizeDesc := flag.Bool("S", false, "sort by file size, descending")
