@@ -87,7 +87,7 @@ user@debian:~$ find /usr/share -name '*exec*' | fstat -s
 
 Running `fstat` on MacOS, using `-S -c` to sort by file size decending, adding commas to file size
 ```
-macbook5:fstat john$ find /Applications/Safari.app/Contents/ -name G\*nib|./fstat -S -c
+macbook:fstat user$ find /Applications/Safari.app/Contents/ -name G\*nib|./fstat -S -c
 +---------------------+--------+------+--------------------------------------------------------------------------------+
 |      MOD TIME       |  SIZE  | TYPE |                                      NAME                                      |
 +---------------------+--------+------+--------------------------------------------------------------------------------+
