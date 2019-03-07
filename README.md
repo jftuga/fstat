@@ -1,6 +1,6 @@
 # fstat
 
-`fstat` is useful when you need to obtain file names, sizes, and timestamps across multiple directories.  You can also sort by timestamp, file size, and file name (both case-sensitive and case-insensitive). 
+`fstat` is useful when you need to obtain file names, sizes, and timestamps across multiple directories.  You can also sort the output by timestamp, file size, and file name (both case-sensitive and case-insensitive). 
 
 The [Releases Page](https://github.com/jftuga/fstat/releases) contains binaries for Windows, MacOS, Linux and FreeBSD.
 
