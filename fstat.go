@@ -21,24 +21,25 @@ package main
 
 import (
     "bufio"
+    "encoding/json"
     "fmt"
     "flag"
     "os"
     "sort"
+    "strconv"
     "strings"
     "time"
 
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "1.2.1"
+const version = "2.0.0"
 
 type FileStat struct {
-    Name string
-    FullName string
-    Size int64
-    ModTime time.Time
-    FileType string
+    FullName string `json:"fullname"`
+    Size int64 `json:"size"`
+    ModTime time.Time `json:"modtime"`
+    FileType string `json:"filetype"`
 }
 
 /*
@@ -56,7 +57,7 @@ func sortSize(entry []FileStat, ascending bool) {
             return ascending
         }
         // when multiple files have the same Size, then alphabetize by file name
-        return entry[i].Name < entry[j].Name
+        return entry[i].FullName < entry[j].FullName
     })
 }
 
@@ -75,7 +76,7 @@ func sortModTime(entry []FileStat, ascending bool) {
             return ascending
         }
         // when multiple files have the same Mod Time, then alphabetize by file name
-        return entry[i].Name < entry[j].Name
+        return entry[i].FullName < entry[j].FullName
     })
 }
 
@@ -148,7 +149,7 @@ func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
             ftype = "L"
         }
 
-        entry := FileStat{Name: f.Name(), FullName: fname, Size: f.Size(), ModTime: f.ModTime(), FileType: ftype}
+        entry := FileStat{FullName: fname, Size: f.Size(), ModTime: f.ModTime(), FileType: ftype}
         allEntries = append(allEntries, entry)
     }
     return allEntries
@@ -174,7 +175,7 @@ Args:
 
     onlyLinks: when set, only ouput symbolic links and exclude files, directories (-ol cmd line option)
 */
-func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool) {
+func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool, outputCSV bool, outputHTML bool, outputJSON bool) {
     var allRows [][]string
     var e FileStat
     var fsize string
@@ -226,9 +227,59 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         allRows = append(allRows, []string{"", tsize, " ", fmt.Sprintf("(total size for %d files)", len(allRows))})
     }
 
+    header := []string{"Mod Time","Size","Type","Name"}
+
+    if outputCSV {
+        fmt.Printf("\"%s\"\n",strings.Join(header[:],"\",\""))
+        for i := 0; i < len(allRows); i++ {
+            fmt.Printf("\"%s\"\n",strings.Join(allRows[i][:],"\",\""))
+        }
+        return
+    }
+
+    if outputHTML {
+        fmt.Println("<!DOCTYPE html>")
+        fmt.Println("<html>")
+        fmt.Println("<body>")
+        fmt.Println("<table border='1' cellpadding='3' cellspacing='3'>")
+        fmt.Printf("<th>%s</th>\n",strings.Join(header[:],"</th><th>"))
+        for i := 0; i < len(allRows); i++ {
+            fmt.Println("<tr>")
+            fmt.Printf("\t<td>%s</td>\n",strings.Join(allRows[i][:],"</td><td>"))
+            fmt.Println("</tr>")
+        }
+        fmt.Println("</table>")
+        fmt.Println("</body>")
+        fmt.Println("</html>")
+        return
+    }
+
+    if outputJSON {
+        var row FileStat
+        var jsonRows []FileStat
+        var err error
+        layout := "2006-01-02 15:04:05"
+        for i := 0; i < len(allRows); i++ {
+            row.ModTime, err = time.Parse(layout,allRows[i][0])
+            if err != nil {
+                fmt.Println(err)
+                os.Exit(1)
+            }
+            row.Size,_ = strconv.ParseInt(strings.Replace(allRows[i][1],",","",-1),10,64)
+            row.FileType = allRows[i][2]
+            row.FullName = allRows[i][3]
+            jsonRows = append(jsonRows,row)
+        }
+        j, _ := json.MarshalIndent(allRows,"","    ")
+        fmt.Println(string(j))
+
+        return
+    }
+
+
     table := tablewriter.NewWriter(os.Stdout)
     table.SetAutoWrapText(false)
-    table.SetHeader([]string{"Mod Time","Size","Type","Name"})
+    table.SetHeader(header)
     table.AppendBulk(allRows)
     if len(allRows) > 0 {
         table.Render()
@@ -240,16 +291,16 @@ ValidateArgs verify all command line arguments.
 It will not allow multiple sort options (such as -s and -d)
 It will now allow multiple 'only' options (such as -of and -od)
 */
-func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *bool, argsSortModTimeDesc *bool, argsSortName *bool, argsSortNameDesc *bool, argsSortNameCaseInsen *bool, argsSortNameCaseInsenDesc *bool, argsOnlyFiles *bool, argsOnlyDirs *bool, argsOnlyLinks *bool ) {
+func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool ) {
     count := 0
-    if *argsSortSize { count++ }
-    if *argsSortSizeDesc { count++ }
-    if *argsSortModTime { count++ }
-    if *argsSortModTimeDesc { count++ }
-    if *argsSortName { count++ }
-    if *argsSortNameDesc { count++ }
-    if *argsSortNameCaseInsen { count++ }
-    if *argsSortNameCaseInsenDesc { count++ }
+    if argsSortSize { count++ }
+    if argsSortSizeDesc { count++ }
+    if argsSortModTime { count++ }
+    if argsSortModTimeDesc { count++ }
+    if argsSortName { count++ }
+    if argsSortNameDesc { count++ }
+    if argsSortNameCaseInsen { count++ }
+    if argsSortNameCaseInsenDesc { count++ }
 
     if count > 1 {
         fmt.Fprintf(os.Stderr,"Error: only one 'sort' argument can be given.\n\n")
@@ -257,12 +308,27 @@ func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *b
     }
 
     count = 0
-    if *argsOnlyFiles { count++ }
-    if *argsOnlyDirs { count++ }
-    if *argsOnlyLinks { count++ }
+    if argsOnlyFiles { count++ }
+    if argsOnlyDirs { count++ }
+    if argsOnlyLinks { count++ }
 
     if count > 1 {
         fmt.Fprintf(os.Stderr,"Error: only one 'only' argument can be given.\n\n")
+        os.Exit(2)
+    }
+
+    count = 0
+    if argsOutputCSV { count++ }
+    if argsOutputHTML { count++ }
+    if argsOutputJSON { count++ }
+
+    if count > 1 {
+        fmt.Fprintf(os.Stderr,"Error: only one 'output' argument can be given.\n\n")
+        os.Exit(2)
+    }
+
+    if argsTotals && (argsOutputCSV || argsOutputHTML || argsOutputJSON) {
+        fmt.Fprintf(os.Stderr,"Error: -t can not be used with: -oc, -oh, or -oj\n\n")
         os.Exit(2)
     }
 }
@@ -271,15 +337,15 @@ func ValidateArgs(argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *b
 SortAllEntries is used to determine which sorting function to use
 At this point, (at most) only one of the *argsSortXXX variables will be true
 */
-func SortAllEntries(allEntries []FileStat, argsSortSize *bool, argsSortSizeDesc *bool, argsSortModTime *bool, argsSortModTimeDesc *bool, argsSortName *bool, argsSortNameDesc *bool, argsSortNameCaseInsen *bool, argsSortNameCaseInsenDesc *bool ) {
-    if *argsSortSize { sortSize(allEntries,true); return }
-    if *argsSortSizeDesc { sortSize(allEntries,false); return }
-    if *argsSortModTime { sortModTime(allEntries,true); return }
-    if *argsSortModTimeDesc { sortModTime(allEntries,false); return }
-    if *argsSortName { sortName(allEntries,true); return }
-    if *argsSortNameDesc { sortName(allEntries,false); return }
-    if *argsSortNameCaseInsen { sortNameCaseInsensitive(allEntries,true); return }
-    if *argsSortNameCaseInsenDesc { sortNameCaseInsensitive(allEntries,false); return }
+func SortAllEntries(allEntries []FileStat, argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool ) {
+    if argsSortSize { sortSize(allEntries,true); return }
+    if argsSortSizeDesc { sortSize(allEntries,false); return }
+    if argsSortModTime { sortModTime(allEntries,true); return }
+    if argsSortModTimeDesc { sortModTime(allEntries,false); return }
+    if argsSortName { sortName(allEntries,true); return }
+    if argsSortNameDesc { sortName(allEntries,false); return }
+    if argsSortNameCaseInsen { sortNameCaseInsensitive(allEntries,true); return }
+    if argsSortNameCaseInsenDesc { sortNameCaseInsensitive(allEntries,false); return }
 }
 
 /*
@@ -287,17 +353,17 @@ main processes & validates cmd line arguments, reads in file names thus creating
 Next, it sorts the entries and finally renders the results to STDOUT
 */
 func main() {
-    argsSortSize := flag.Bool("s", false, "sort by file size")
-    argsSortSizeDesc := flag.Bool("S", false, "sort by file size, descending")
+    argsSortSize := flag.Bool("ss", false, "sort by file size")
+    argsSortSizeDesc := flag.Bool("sS", false, "sort by file size, descending")
 
-    argsSortModTime := flag.Bool("d", false, "sort by file modified date")
-    argsSortModTimeDesc := flag.Bool("D", false, "sort by file modified date, newest first")
+    argsSortModTime := flag.Bool("sd", false, "sort by file modified date")
+    argsSortModTimeDesc := flag.Bool("sD", false, "sort by file modified date, newest first")
 
-    argsSortName := flag.Bool("n", false, "sort by file name")
-    argsSortNameDesc := flag.Bool("N", false, "sort by file name, reverse alphabetical order")
+    argsSortName := flag.Bool("sn", false, "sort by file name")
+    argsSortNameDesc := flag.Bool("sN", false, "sort by file name, reverse alphabetical order")
 
-    argsSortNameCaseInsen := flag.Bool("i", false, "case-insensitive sort by file name")
-    argsSortNameCaseInsenDesc := flag.Bool("I", false, "case-insensitive sort by file name, reverse alphabetical order")
+    argsSortNameCaseInsen := flag.Bool("si", false, "sort by file name, ignore case")
+    argsSortNameCaseInsenDesc := flag.Bool("sI", false, "sort by file name, ignore case, reverse alphabetical order")
 
     argsVersion := flag.Bool("v", false, "show program version and then exit")
     argsQuiet := flag.Bool("q", false, "do not display file errors")
@@ -306,9 +372,13 @@ func main() {
     argsMilliseconds := flag.Bool("M", false, "add milliseconds to file time stamps")
     argsTotals := flag.Bool("t", false, "append total file size and file count")
 
-    argsOnlyFiles := flag.Bool("of", false, "only display files")
-    argsOnlyDirs := flag.Bool("od", false, "only display directories")
-    argsOnlyLinks := flag.Bool("ol", false, "only display symbolic links")
+    argsOnlyFiles := flag.Bool("if", false, "include only files")
+    argsOnlyDirs := flag.Bool("id", false, "include only directories")
+    argsOnlyLinks := flag.Bool("il", false, "include only symbolic links")
+
+    argsOutputCSV := flag.Bool("oc", false, "ouput to CSV format")
+    argsOutputHTML := flag.Bool("oh", false, "ouput to HTML format")
+    argsOutputJSON := flag.Bool("oj", false, "ouput to JSON format")
 
     flag.Usage = func() {
         pgmName := os.Args[0]
@@ -327,7 +397,7 @@ func main() {
         os.Exit(1)
     }
 
-    ValidateArgs(argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc, argsOnlyFiles, argsOnlyDirs, argsOnlyLinks)
+    ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
     args := flag.Args()
 
     var input *bufio.Scanner
@@ -345,7 +415,7 @@ func main() {
     }
 
     allEntries := GetFileInfo(input, *argsQuiet)
-    SortAllEntries(allEntries,argsSortSize, argsSortSizeDesc, argsSortModTime, argsSortModTimeDesc, argsSortName, argsSortNameDesc, argsSortNameCaseInsen, argsSortNameCaseInsenDesc)
-    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks)
+    SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
+    RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
 }
 
