@@ -112,9 +112,9 @@ user@debian:~$ fstat -f "/usr/*bin/f*g /etc/pa*"
 ```
 
 
-Running `fstat` on Linux, using `-s` to sort by file size
+Running `fstat` on Linux, using `-ss` to sort by file size
 ```
-user@debian:~$ find /usr/share -name '*exec*' | fstat -s
+user@debian:~$ find /usr/share -name '*exec*' | fstat -ss
 
 +---------------------+-------+------+-----------------------------------------------------+
 |      MOD TIME       | SIZE  | TYPE |                        NAME                         |
@@ -133,9 +133,9 @@ user@debian:~$ find /usr/share -name '*exec*' | fstat -s
 +---------------------+-------+------+-----------------------------------------------------+
 ```
 
-Running `fstat` on MacOS, using `-S -c` to sort by file size decending, adding commas to file size
+Running `fstat` on MacOS, using `-sS -c` to sort by file size decending, adding commas to file size
 ```
-macbook:fstat user$ find /Applications/Safari.app/Contents/ -name G\*nib|./fstat -S -c
+macbook:fstat user$ find /Applications/Safari.app/Contents/ -name G\*nib|./fstat -sS -c
 +---------------------+--------+------+--------------------------------------------------------------------------------+
 |      MOD TIME       |  SIZE  | TYPE |                                      NAME                                      |
 +---------------------+--------+------+--------------------------------------------------------------------------------+
@@ -144,9 +144,9 @@ macbook:fstat user$ find /Applications/Safari.app/Contents/ -name G\*nib|./fstat
 +---------------------+--------+------+--------------------------------------------------------------------------------+
 ```
 
-Running `fstat` on Linux, using `-D` to sort by modification time, newest timestamp first
+Running `fstat` on Linux, using `-sD` to sort by modification time, newest timestamp first
 ```
-user@debian:~$ find /lib | grep cryptsetup | ./fstat -D
+user@debian:~$ find /lib | grep cryptsetup | ./fstat -sD
 
 +---------------------+--------+------+-------------------------------------------------------------+
 |      MOD TIME       |  SIZE  | TYPE |                            NAME                             |
