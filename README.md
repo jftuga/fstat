@@ -15,28 +15,43 @@ ___
 ### Usage
 ```
 fstat: Get info for a list of files across multiple directories
-
 usage: fstat [options] [filename|or blank for STDIN]
-       filename should contain a list of files
+       (filename should contain a list of files)
 
-  -D	sort by file modified date, newest first
-  -I	case-insensitive sort by file name, reverse alphabetical order
   -M	add milliseconds to file time stamps
-  -N	sort by file name, reverse alphabetical order
-  -S	sort by file size, descending
   -c	add comma thousands separator to file sizes
-  -d	sort by file modified date
-  -i	case-insensitive sort by file name
+  -f string
+    	use these files instead of from a file or STDIN, can include wildcards
+  -id
+    	include only directories
+  -if
+    	include only files
+  -il
+    	include only symbolic links
   -m	convert file sizes to mebibytes
-  -n	sort by file name
-  -od
-    	only display directories
-  -of
-    	only display files
-  -ol
-    	only display symbolic links
+  -oc
+    	ouput to CSV format
+  -oh
+    	ouput to HTML format
+  -oj
+    	ouput to JSON format
   -q	do not display file errors
-  -s	sort by file size
+  -sD
+    	sort by file modified date, newest first
+  -sI
+    	sort by file name, ignore case, reverse alphabetical order
+  -sN
+    	sort by file name, reverse alphabetical order
+  -sS
+    	sort by file size, descending
+  -sd
+    	sort by file modified date
+  -si
+    	sort by file name, ignore case
+  -sn
+    	sort by file name
+  -ss
+    	sort by file size
   -t	append total file size and file count
   -v	show program version and then exit
 ```
@@ -54,13 +69,8 @@ c:\> dir /s/b "c:\Program Files\Microsoft Office\*.exe" | fstat.exe
 +---------------------+---------+------+---------------------------------------------------------------------------------------------------+
 | 2019-02-20 14:35:11 |  414360 | F    | c:\Program Files\Microsoft Office\root\Office16\VPREVIEW.EXE                                      |
 | 2019-02-20 14:35:11 | 1966392 | F    | c:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE                                       |
-| 2019-02-20 14:35:11 |   36936 | F    | c:\Program Files\Microsoft Office\root\Office16\Wordconv.exe                                      |
-| 2018-12-05 10:12:30 | 3026088 | F    | c:\Program Files\Microsoft Office\root\Office16\WORDICON.EXE                                      |
-| 2018-12-05 10:12:31 | 3696296 | F    | c:\Program Files\Microsoft Office\root\Office16\XLICONS.EXE                                       |
 | 2018-12-05 10:10:48 |  289584 | F    | c:\Program Files\Microsoft Office\root\Office16\1033\VISEVMON.EXE                                 |
 | 2019-02-20 14:34:56 |   40264 | F    | c:\Program Files\Microsoft Office\root\Office16\DCF\Common.DBConnection.exe                       |
-| 2019-02-20 14:34:56 |   39032 | F    | c:\Program Files\Microsoft Office\root\Office16\DCF\Common.DBConnection64.exe                     |
-| 2018-12-05 10:11:38 |   33592 | F    | c:\Program Files\Microsoft Office\root\Office16\DCF\Common.ShowHelp.exe                           |
 | 2019-02-20 14:34:56 |  186704 | F    | c:\Program Files\Microsoft Office\root\Office16\DCF\DATABASECOMPARE.EXE                           |
 | 2018-12-05 10:12:18 |  267384 | F    | c:\Program Files\Microsoft Office\root\Office16\DCF\filecompare.exe                               |
 | 2019-02-20 14:34:56 |  465528 | F    | c:\Program Files\Microsoft Office\root\Office16\DCF\SPREADSHEETCOMPARE.EXE                        |
@@ -68,6 +78,39 @@ c:\> dir /s/b "c:\Program Files\Microsoft Office\*.exe" | fstat.exe
 | 2019-01-10 10:06:19 |  372864 | F    | c:\Program Files\Microsoft Office\root\vfs\ProgramFilesX64\Microsoft Office\Office16\MSOHTMED.EXE |
 +---------------------+---------+------+---------------------------------------------------------------------------------------------------+
 ```
+
+Running `fstat` in Windows with `-f` option:
+```
+c:\> fstat.exe -f "c:\Windows\Microsoft.NET\Framework*\*\csc.exe"
+
++---------------------+---------+------+---------------------------------------------------------+
+|      MOD TIME       |  SIZE   | TYPE |                          NAME                           |
++---------------------+---------+------+---------------------------------------------------------+
+| 2016-05-25 10:56:04 | 1545864 | F    | c:\Windows\Microsoft.NET\Framework\v3.5\csc.exe         |
+| 2017-04-21 17:53:36 | 2170488 | F    | c:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe   |
+| 2016-07-14 14:18:12 |   88712 | F    | c:\Windows\Microsoft.NET\Framework64\v2.0.50727\csc.exe |
+| 2016-05-25 14:29:34 | 2288264 | F    | c:\Windows\Microsoft.NET\Framework64\v3.5\csc.exe       |
+| 2017-04-21 17:50:55 | 2738296 | F    | c:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe |
+| 2016-07-13 14:33:18 |   77960 | F    | c:\Windows\Microsoft.NET\Framework\v2.0.50727\csc.exe   |
++---------------------+---------+------+---------------------------------------------------------+
+```
+
+Running `fstat` on Linux, using `-f` option:
+```
+user@debian:~$ fstat -f "/usr/*bin/f*g /etc/pa*"
+
++---------------------+-------+------+--------------------+
+|      MOD TIME       | SIZE  | TYPE |        NAME        |
++---------------------+-------+------+--------------------+
+| 2018-12-23 18:59:35 |  1421 | F    | /etc/passwd        |
+| 2018-12-23 18:59:35 |  1421 | F    | /etc/passwd-       |
+| 2017-05-17 07:59:59 | 18728 | F    | /usr/bin/faillog   |
+| 2017-01-31 19:54:55 | 14352 | F    | /usr/sbin/filefrag |
+| 2017-05-27 11:44:02 |   552 | F    | /etc/pam.conf      |
+| 2019-03-04 06:17:55 |  4096 | D    | /etc/pam.d         |
++---------------------+-------+------+--------------------+
+```
+
 
 Running `fstat` on Linux, using `-s` to sort by file size
 ```
@@ -111,7 +154,6 @@ user@debian:~$ find /lib | grep cryptsetup | ./fstat -D
 | 2019-02-13 18:31:00 |  72296 | F    | /lib/systemd/system-generators/systemd-cryptsetup-generator |
 | 2019-02-13 18:30:59 |  92752 | F    | /lib/systemd/systemd-cryptsetup                             |
 | 2019-02-13 18:30:47 |     20 | L    | /lib/systemd/system/sysinit.target.wants/cryptsetup.target  |
-| 2019-02-13 18:30:36 |    394 | F    | /lib/systemd/system/cryptsetup-pre.target                   |
 | 2019-02-13 18:30:36 |    366 | F    | /lib/systemd/system/cryptsetup.target                       |
 | 2018-03-26 12:32:43 |   4096 | D    | /lib/cryptsetup/checks                                      |
 | 2018-03-26 12:32:43 |   4096 | D    | /lib/cryptsetup                                             |
@@ -122,15 +164,9 @@ user@debian:~$ find /lib | grep cryptsetup | ./fstat -D
 | 2017-09-06 06:08:21 |  10552 | F    | /lib/cryptsetup/scripts/passdev                             |
 | 2017-09-06 06:08:16 |   1040 | F    | /lib/cryptsetup/checks/blkid                                |
 | 2017-09-06 06:08:16 |  19047 | F    | /lib/cryptsetup/cryptdisks.functions                        |
-| 2017-09-06 06:08:16 |   1214 | F    | /lib/cryptsetup/scripts/decrypt_derived                     |
-| 2017-09-06 06:08:16 |    576 | F    | /lib/cryptsetup/scripts/decrypt_gnupg                       |
-| 2017-09-06 06:08:16 |   3042 | F    | /lib/cryptsetup/scripts/decrypt_keyctl                      |
-| 2017-09-06 06:08:16 |   1724 | F    | /lib/cryptsetup/scripts/decrypt_openct                      |
 | 2017-09-06 06:08:16 |   1414 | F    | /lib/cryptsetup/scripts/decrypt_opensc                      |
 | 2017-09-06 06:08:16 |    347 | F    | /lib/cryptsetup/scripts/decrypt_ssl                         |
 | 2017-09-06 06:08:16 |    387 | F    | /lib/cryptsetup/checks/ext2                                 |
-| 2017-09-06 06:08:16 |    148 | F    | /lib/cryptsetup/checks/swap                                 |
-| 2017-09-06 06:08:16 |    827 | F    | /lib/cryptsetup/checks/un_blkid                             |
 | 2017-09-06 06:08:16 |    147 | F    | /lib/cryptsetup/checks/xfs                                  |
 +---------------------+--------+------+-------------------------------------------------------------+
 
