@@ -34,7 +34,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.1.0"
+const version = "2.1.1"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -47,7 +47,7 @@ type FileStat struct {
 sortSize sorts the FileStat slice by file sizes
 If ascending is true, the list is sorted from smallest to largest
 Otherwise, largest to smallest
-cmd line options: -s and -S
+cmd line options: -ss and -sS
 */
 func sortSize(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
@@ -66,7 +66,7 @@ func sortSize(entry []FileStat, ascending bool) {
 sortModTime sorts the FileStat slice by file modification time
 If ascending is true, the list is sorted from oldest to newest
 Otherwise, newest to oldest
-cmd line options: -d and -D
+cmd line options: -sd and -sD
 */
 func sortModTime(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
@@ -85,7 +85,7 @@ func sortModTime(entry []FileStat, ascending bool) {
 sortName sorts the FileStat slice by file name
 If ascending is true, the list is sorted in alphabetical order
 Otherwise, reverse alphabetical order
-cmd line options: -n and -N
+cmd line options: -sn and -sN
 */
 func sortName(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
@@ -102,7 +102,7 @@ sortNameCaseInsensitive sorts the FileStat slice by file name, ignoring case
 This is done by making all names lower case before comparing names
 If ascending is true, the list is sorted in alphabetical order
 Otherwise, reverse alphabetical order
-cmd line options: -i and -I
+cmd line options: -si and -sI
 */
 func sortNameCaseInsensitive(entry []FileStat, ascending bool) {
     sort.Slice(entry, func(i, j int) bool {
@@ -294,19 +294,19 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         return
     }
 
-
-    table := tablewriter.NewWriter(os.Stdout)
-    table.SetAutoWrapText(false)
-    table.SetHeader(header)
-    table.AppendBulk(allRows)
+    // by default, output to STDOUT
     if len(allRows) > 0 {
+        table := tablewriter.NewWriter(os.Stdout)
+        table.SetAutoWrapText(false)
+        table.SetHeader(header)
+        table.AppendBulk(allRows)
         table.Render()
     }
 }
 
 /*
 ValidateArgs verify all command line arguments.
-It will not allow multiple sort options (such as -s and -d)
+It will not allow multiple sort options (such as -ss and -sd)
 It will now allow multiple 'only' options (such as -of and -od)
 */
 func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool ) {
@@ -321,7 +321,7 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
     if argsSortNameCaseInsenDesc { count++ }
 
     if count > 1 {
-        fmt.Fprintf(os.Stderr,"Error: only one 'sort' argument can be given.\n\n")
+        fmt.Fprintf(os.Stderr,"Error: only one '-s' sort argument can be given.\n\n")
         os.Exit(2)
     }
 
@@ -331,7 +331,7 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
     if argsOnlyLinks { count++ }
 
     if count > 1 {
-        fmt.Fprintf(os.Stderr,"Error: only one 'only' argument can be given.\n\n")
+        fmt.Fprintf(os.Stderr,"Error: only one '-i' include argument can be given.\n\n")
         os.Exit(2)
     }
 
@@ -341,7 +341,7 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
     if argsOutputJSON { count++ }
 
     if count > 1 {
-        fmt.Fprintf(os.Stderr,"Error: only one 'output' argument can be given.\n\n")
+        fmt.Fprintf(os.Stderr,"Error: only one '-o' output argument can be given.\n\n")
         os.Exit(2)
     }
 
@@ -407,7 +407,7 @@ func main() {
         }
         fmt.Fprintf(os.Stderr, "\n%s: Get info for a list of files across multiple directories\n", pgmName)
         fmt.Fprintf(os.Stderr, "usage: %s [options] [filename|or blank for STDIN]\n", pgmName)
-        fmt.Fprintf(os.Stderr, "       (filename should contain a list of files)\n\n")
+        fmt.Fprintf(os.Stderr, "       (this file should contain a list of files to process)\n\n")
         flag.PrintDefaults()
     }
 
