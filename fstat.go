@@ -25,6 +25,7 @@ import (
     "fmt"
     "flag"
     "os"
+    "path/filepath"
     "sort"
     "strconv"
     "strings"
@@ -33,7 +34,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.0.0"
+const version = "2.1.0"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -114,23 +115,40 @@ func sortNameCaseInsensitive(entry []FileStat, ascending bool) {
 }
 
 /*
+GetFileList will generate a slice of strings which include all files to be examined
+
+Args:
+    input: an input reader that will either be a file given on cmd line or read from STDIN
+
+Returns:
+    a slice of strings that are file names
+*/
+func GetFileList(input *bufio.Scanner) ([]string) {
+    var allFilenames []string
+
+    for input.Scan() {
+        allFilenames = append(allFilenames, input.Text())
+    }
+    return allFilenames
+}
+
+
+/*
 GetFileInfo will read a list of file names, get the file's timestamp and size,
 and create the allEntries slice
 
 Args:
-    input: a list of file names, either from a file given on cmd line or read from STDIN
+    input: a slice of file names
 
     quiet: when set, errors are not reported to STDERR
 
 Returns:
     a slice of type FileStat containing all files that were successfully examined
 */
-func GetFileInfo(input *bufio.Scanner, quiet bool) ([]FileStat) {
+func GetFileInfo(allFilenames []string, quiet bool) ([]FileStat) {
     var allEntries []FileStat
-    fname := ""
 
-    for input.Scan() {
-        fname = input.Text()
+    for _,fname:= range(allFilenames) {
         f,err := os.Lstat(fname)
 
         if err != nil {
@@ -380,6 +398,8 @@ func main() {
     argsOutputHTML := flag.Bool("oh", false, "ouput to HTML format")
     argsOutputJSON := flag.Bool("oj", false, "ouput to JSON format")
 
+    argsFilenames := flag.String("f", "", "use these files instead of from a file or STDIN, can include wildcards")
+
     flag.Usage = func() {
         pgmName := os.Args[0]
         if(strings.HasPrefix(os.Args[0],"./")) {
@@ -399,22 +419,61 @@ func main() {
 
     ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
     args := flag.Args()
+    var allFilenames []string
 
-    var input *bufio.Scanner
-    if 0 == len(args) { // read from STDIN
-        input = bufio.NewScanner(os.Stdin)
-    } else { // read from filename
-        fname := args[0]
-        file, err := os.Open(fname)
-        if err != nil {
-            fmt.Fprintf(os.Stderr, "%s\n", err)
-            os.Exit(1)
+    // get a list of filenames by either using -f
+    // or by reading from a file
+    // or by reading from STDIN
+    if len(*argsFilenames) > 0 { // using -f
+        // -f can be a space delimited list of filename wildcards (aka Globs)
+        // iterate through all of these globs to create a unique list of files named allFilenames
+        // (this is done by using a temporary map named allGlobbedNames
+        var allGlobs []string
+        var n,m int
+        allGlobbedNames := make(map[string]int)
+
+        // get slice of wildcards
+        fileglobs := strings.Fields(*argsFilenames)
+        for n=0; n < len(fileglobs); n++ {
+            allGlobs = append(allGlobs,fileglobs[n])
         }
-        defer file.Close()
-        input = bufio.NewScanner(file)
+
+        // create a slice of files in one of those wildcard entries named currentFilelist
+        for n=0; n < len(allGlobs); n++ {
+            currentFilelist, err := filepath.Glob(allGlobs[n])
+            if err != nil {
+                fmt.Fprintf(os.Stderr, "%s\n", err)
+                continue
+            }
+            // add all of these file names to a 'global' map of files
+            // duplicates file names are discarded
+            for m=0; m < len(currentFilelist); m++ {
+                allGlobbedNames[currentFilelist[m]] = 0
+            }
+        }
+        // from the allGlobbedNames map, create the allFilenames slice
+        // (which is the file goal)
+        for key,_ := range allGlobbedNames {
+            allFilenames = append(allFilenames,key)
+        }
+    } else { // using a filename or STDIN
+        var input *bufio.Scanner
+        if 0 == len(args) { // read from STDIN
+            input = bufio.NewScanner(os.Stdin)
+        } else { // read from filename
+            fname := args[0]
+            file, err := os.Open(fname)
+            if err != nil {
+                fmt.Fprintf(os.Stderr, "%s\n", err)
+                os.Exit(1)
+            }
+            defer file.Close()
+            input = bufio.NewScanner(file)
+        }
+        allFilenames = GetFileList(input)
     }
 
-    allEntries := GetFileInfo(input, *argsQuiet)
+    allEntries := GetFileInfo(allFilenames, *argsQuiet)
     SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
     RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
 }
