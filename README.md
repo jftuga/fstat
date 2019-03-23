@@ -16,7 +16,7 @@ ___
 ```
 fstat: Get info for a list of files across multiple directories
 usage: fstat [options] [filename|or blank for STDIN]
-       (filename should contain a list of files)
+       (this file should contain a list of files to process)
 
   -M	add milliseconds to file time stamps
   -c	add comma thousands separator to file sizes
