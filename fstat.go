@@ -35,7 +35,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.1.1"
+const version = "2.2.0"
 
 type FileStat struct {
     FullName string `json:"fullname"`
