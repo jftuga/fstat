@@ -14,12 +14,15 @@ ___
 
 ### Usage
 ```
+
 fstat: Get info for a list of files across multiple directories
 usage: fstat [options] [filename|or blank for STDIN]
        (this file should contain a list of files to process)
 
   -M	add milliseconds to file time stamps
   -c	add comma thousands separator to file sizes
+  -ed
+    	exclude-dot, exclude files and directories starting with a dot
   -f string
     	use these files instead of from a file or STDIN, can include wildcards
   -id
