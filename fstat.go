@@ -27,6 +27,7 @@ import (
     "os"
     "path"
     "path/filepath"
+    "regexp"
     "sort"
     "strconv"
     "strings"
@@ -35,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.2.0"
+const version = "2.3.0"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -145,16 +146,34 @@ Args:
 
     excludeDot: when set, exclude dot files (cmd line option: -ed)
 
+    excludeRE: when set, exclude based on this regular expression
+
 Returns:
     a slice of type FileStat containing all files that were successfully examined
 */
-func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool) ([]FileStat) {
+func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE string) ([]FileStat) {
     var allEntries []FileStat
+    shouldExcludeRE := false
+    var excludeMatched *regexp.Regexp
+    var err error
+
+    if len(excludeRE) > 0 {
+        excludeMatched, err = regexp.Compile(excludeRE)
+        if err != nil {
+            fmt.Fprintf(os.Stderr,"Invalid regular expression: %s\n", excludeRE)
+            os.Exit(3)
+        }
+        shouldExcludeRE = true
+    }
 
     for _,fname:= range(allFilenames) {
         if excludeDot && "." == path.Base(fname)[:1] {
             continue
         }
+        if shouldExcludeRE && excludeMatched.Match([]byte(fname)) {
+            continue
+        }
+
         f,err := os.Lstat(fname)
 
         if err != nil {
@@ -405,7 +424,8 @@ func main() {
     argsOutputJSON := flag.Bool("oj", false, "ouput to JSON format")
 
     argsFilenames := flag.String("f", "", "use these files instead of from a file or STDIN, can include wildcards")
-    argsExcludeDot := flag.Bool("ed", false, "exclude-dot, exclude files and directories starting with a dot")
+    argsExcludeDot := flag.Bool("ed", false, "exclude-dot, exclude anything starting with a dot")
+    argsExcludeRE := flag.String("er", "", "exclude-regexp, exclude anything based on given regular expression")
 
     flag.Usage = func() {
         pgmName := os.Args[0]
@@ -480,7 +500,7 @@ func main() {
         allFilenames = GetFileList(input)
     }
 
-    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot)
+    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE)
     SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
     RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
 }
