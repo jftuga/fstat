@@ -25,6 +25,7 @@ import (
     "fmt"
     "flag"
     "os"
+    "path"
     "path/filepath"
     "sort"
     "strconv"
@@ -140,15 +141,20 @@ and create the allEntries slice
 Args:
     input: a slice of file names
 
-    quiet: when set, errors are not reported to STDERR
+    quiet: when set, errors are not reported to STDERR (cmd line option: -q)
+
+    excludeDot: when set, exclude dot files (cmd line option: -ed)
 
 Returns:
     a slice of type FileStat containing all files that were successfully examined
 */
-func GetFileInfo(allFilenames []string, quiet bool) ([]FileStat) {
+func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool) ([]FileStat) {
     var allEntries []FileStat
 
     for _,fname:= range(allFilenames) {
+        if excludeDot && "." == path.Base(fname)[:1] {
+            continue
+        }
         f,err := os.Lstat(fname)
 
         if err != nil {
@@ -399,6 +405,7 @@ func main() {
     argsOutputJSON := flag.Bool("oj", false, "ouput to JSON format")
 
     argsFilenames := flag.String("f", "", "use these files instead of from a file or STDIN, can include wildcards")
+    argsExcludeDot := flag.Bool("ed", false, "exclude-dot, exclude files and directories starting with a dot")
 
     flag.Usage = func() {
         pgmName := os.Args[0]
@@ -473,7 +480,7 @@ func main() {
         allFilenames = GetFileList(input)
     }
 
-    allEntries := GetFileInfo(allFilenames, *argsQuiet)
+    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot)
     SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
     RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
 }
