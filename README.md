@@ -14,7 +14,6 @@ ___
 
 ### Usage
 ```
-
 fstat: Get info for a list of files across multiple directories
 usage: fstat [options] [filename|or blank for STDIN]
        (this file should contain a list of files to process)
@@ -22,7 +21,9 @@ usage: fstat [options] [filename|or blank for STDIN]
   -M	add milliseconds to file time stamps
   -c	add comma thousands separator to file sizes
   -ed
-    	exclude-dot, exclude files and directories starting with a dot
+    	exclude-dot, exclude anything starting with a dot
+  -er string
+    	exclude-regexp, exclude anything based on given regular expression
   -f string
     	use these files instead of from a file or STDIN, can include wildcards
   -id
