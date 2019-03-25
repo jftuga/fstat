@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.3.0"
+const version = "2.3.1"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -324,6 +324,7 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         table := tablewriter.NewWriter(os.Stdout)
         table.SetAutoWrapText(false)
         table.SetHeader(header)
+        table.SetAlignment(tablewriter.ALIGN_LEFT)
         table.AppendBulk(allRows)
         table.Render()
     }
