@@ -148,22 +148,35 @@ Args:
 
     excludeRE: when set, exclude based on this regular expression
 
+    includeRE: when set, only include based on this regular expression
+
 Returns:
     a slice of type FileStat containing all files that were successfully examined
 */
-func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE string) ([]FileStat) {
+func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE string, includeRE string) ([]FileStat) {
     var allEntries []FileStat
     shouldExcludeRE := false
+    shouldIncludeRE := false
     var excludeMatched *regexp.Regexp
+    var includeMatched *regexp.Regexp
     var err error
 
     if len(excludeRE) > 0 {
         excludeMatched, err = regexp.Compile(excludeRE)
         if err != nil {
-            fmt.Fprintf(os.Stderr,"Invalid regular expression: %s\n", excludeRE)
+            fmt.Fprintf(os.Stderr,"Invalid 'exclude' regular expression: %s\n", excludeRE)
             os.Exit(3)
         }
         shouldExcludeRE = true
+    }
+
+    if len(includeRE) > 0 {
+        includeMatched, err = regexp.Compile(includeRE)
+        if err != nil {
+            fmt.Fprintf(os.Stderr,"Invalid 'include' regular expression: %s\n", includeRE)
+            os.Exit(4)
+        }
+        shouldIncludeRE = true
     }
 
     for _,fname:= range(allFilenames) {
@@ -171,6 +184,9 @@ func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE s
             continue
         }
         if shouldExcludeRE && excludeMatched.Match([]byte(fname)) {
+            continue
+        }
+        if shouldIncludeRE && !includeMatched.Match([]byte(fname)) {
             continue
         }
 
@@ -426,7 +442,8 @@ func main() {
 
     argsFilenames := flag.String("f", "", "use these files instead of from a file or STDIN, can include wildcards")
     argsExcludeDot := flag.Bool("ed", false, "exclude-dot, exclude anything starting with a dot")
-    argsExcludeRE := flag.String("er", "", "exclude-regexp, exclude anything based on given regular expression")
+    argsExcludeRE := flag.String("er", "", "exclude-regexp, exclude based on given regular expression; use .* instead of just *")
+    argsIncludeRE := flag.String("ir", "", "include-regexp, only include based on given regular expression; use .* instead of just *")
 
     flag.Usage = func() {
         pgmName := os.Args[0]
@@ -437,6 +454,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "usage: %s [options] [filename|or blank for STDIN]\n", pgmName)
         fmt.Fprintf(os.Stderr, "       (this file should contain a list of files to process)\n\n")
         flag.PrintDefaults()
+        fmt.Fprintf(os.Stderr, "\nNote: -er precedes -ir\n\n")
     }
 
     flag.Parse()
@@ -501,7 +519,7 @@ func main() {
         allFilenames = GetFileList(input)
     }
 
-    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE)
+    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE)
     SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
     RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
 }
