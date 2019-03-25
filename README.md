@@ -23,7 +23,7 @@ usage: fstat [options] [filename|or blank for STDIN]
   -ed
     	exclude-dot, exclude anything starting with a dot
   -er string
-    	exclude-regexp, exclude anything based on given regular expression
+    	exclude-regexp, exclude based on given regular expression; use .* instead of just *
   -f string
     	use these files instead of from a file or STDIN, can include wildcards
   -id
@@ -32,6 +32,8 @@ usage: fstat [options] [filename|or blank for STDIN]
     	include only files
   -il
     	include only symbolic links
+  -ir string
+    	include-regexp, only include based on given regular expression; use .* instead of just *
   -m	convert file sizes to mebibytes
   -oc
     	ouput to CSV format
@@ -58,6 +60,8 @@ usage: fstat [options] [filename|or blank for STDIN]
     	sort by file size
   -t	append total file size and file count
   -v	show program version and then exit
+
+Note: -er precedes -ir
 ```
 
 ___
