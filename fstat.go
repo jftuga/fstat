@@ -299,7 +299,11 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         }
         allRows = append(allRows, []string{"", tsize, " ", fmt.Sprintf("  (total size for %d files)", totalFileCount)})
 
-        averageFileSize := float64(totalFileSize / totalFileCount)
+        var averageFileSize float64
+        if totalFileCount > 0 {
+            averageFileSize = float64(totalFileSize / totalFileCount)
+        }
+
         asize := fmt.Sprintf("%.0f",averageFileSize)
         if addCommas {
             asize = RenderFloat("#,###.",averageFileSize)
