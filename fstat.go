@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.4.1"
+const version = "2.4.2"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -180,7 +180,7 @@ func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE s
     }
 
     for _,fname:= range(allFilenames) {
-        if excludeDot && "." == path.Base(fname)[:1] {
+        if excludeDot && ( "." == path.Base(fname)[:1] || strings.Contains(fname,"/.") ) {
             continue
         }
         if shouldExcludeRE && excludeMatched.Match([]byte(fname)) {
@@ -452,7 +452,7 @@ func main() {
     argsOutputJSON := flag.Bool("oj", false, "ouput to JSON format")
 
     argsFilenames := flag.String("f", "", "use these files instead of from a file or STDIN, can include wildcards")
-    argsExcludeDot := flag.Bool("ed", false, "exclude-dot, exclude anything starting with a dot")
+    argsExcludeDot := flag.Bool("ed", false, "exclude-dot, exclude all dot files and directories")
     argsExcludeRE := flag.String("er", "", "exclude-regexp, exclude based on given regular expression; use .* instead of just *")
     argsIncludeRE := flag.String("ir", "", "include-regexp, only include based on given regular expression; use .* instead of just *")
 
