@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.4.2"
+const version = "2.4.3"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -240,6 +240,7 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
     var fsize string
     var modtime string
     var totalFileSize int64
+    var totalFileCount int64
 
     for _,e = range allEntries {
 	if onlyFiles && "F" != e.FileType {
@@ -251,8 +252,9 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
 	if onlyLinks && "L" != e.FileType {
 		continue
 	}
-        if includeTotals {
+        if includeTotals && "F" ==  e.FileType {
             totalFileSize += e.Size
+            totalFileCount++
         }
         if convertToMiB {
             e.Size /= 1048576
@@ -283,15 +285,15 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         if addCommas {
             tsize = RenderInteger("#,###.",totalFileSize)
         }
-        allRows = append(allRows, []string{"", tsize, " ", fmt.Sprintf("(total size for %d files)", len(allRows))})
+        allRows = append(allRows, []string{"", tsize, " ", fmt.Sprintf("  (total size for %d files)", totalFileCount)})
 
-        averageFileSize := float64(totalFileSize / int64(len(allRows)-1))
+        averageFileSize := float64(totalFileSize / totalFileCount)
         asize := fmt.Sprintf("%.0f",averageFileSize)
         if addCommas {
             asize = RenderFloat("#,###.",averageFileSize)
         }
         if len(allRows) > 0 {
-            allRows = append(allRows, []string{"", asize, " ", fmt.Sprintf("(average size for %d files)", len(allRows)-1)})
+            allRows = append(allRows, []string{"", asize, " ", fmt.Sprintf("(average size for %d files)", totalFileCount)})
         }
 
     }
