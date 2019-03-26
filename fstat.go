@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.4.0"
+const version = "2.4.1"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -284,6 +284,16 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
             tsize = RenderInteger("#,###.",totalFileSize)
         }
         allRows = append(allRows, []string{"", tsize, " ", fmt.Sprintf("(total size for %d files)", len(allRows))})
+
+        averageFileSize := float64(totalFileSize / int64(len(allRows)-1))
+        asize := fmt.Sprintf("%.0f",averageFileSize)
+        if addCommas {
+            asize = RenderFloat("#,###.",averageFileSize)
+        }
+        if len(allRows) > 0 {
+            allRows = append(allRows, []string{"", asize, " ", fmt.Sprintf("(average size for %d files)", len(allRows)-1)})
+        }
+
     }
 
     header := []string{"Mod Time","Size","Type","Name"}
@@ -341,6 +351,7 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         table.SetAutoWrapText(false)
         table.SetHeader(header)
         table.SetAlignment(tablewriter.ALIGN_LEFT)
+        table.SetColumnAlignment( []int{tablewriter.ALIGN_LEFT,tablewriter.ALIGN_RIGHT,tablewriter.ALIGN_LEFT,tablewriter.ALIGN_LEFT})
         table.AppendBulk(allRows)
         table.Render()
     }
