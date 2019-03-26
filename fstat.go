@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.4.4"
+const version = "2.4.5"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -243,6 +243,8 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
     var modtime string
     var totalFileSize int64
     var totalFileCount int64
+    var totalDirCount int64
+    var totalSymLinkCount int64
 
     for _,e = range allEntries {
         if onlyFiles && "F" != e.FileType {
@@ -254,9 +256,17 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         if onlyLinks && "L" != e.FileType {
             continue
         }
-        if includeTotals && "F" ==  e.FileType {
-            totalFileSize += e.Size
-            totalFileCount++
+        if includeTotals {
+            if "F" ==  e.FileType {
+                totalFileSize += e.Size
+                totalFileCount++
+            }
+            if "D" ==  e.FileType {
+                totalDirCount++
+            }
+            if "L" ==  e.FileType {
+                totalSymLinkCount++
+            }
         }
         if convertToMiB {
             e.Size /= 1048576
@@ -297,7 +307,12 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
         if len(allRows) > 0 {
             allRows = append(allRows, []string{"", asize, " ", fmt.Sprintf("(average size for %d files)", totalFileCount)})
         }
-
+        if totalDirCount > 0 {
+            allRows = append(allRows, []string{"", fmt.Sprintf("%d",totalDirCount), " ", "(num of directories)"})
+        }
+        if totalSymLinkCount > 0 {
+            allRows = append(allRows, []string{"", fmt.Sprintf("%d",totalSymLinkCount), " ", "(num of sym links)"})
+        }
     }
 
     header := []string{"Mod Time","Size","Type","Name"}
