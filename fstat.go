@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.4.3"
+const version = "2.4.4"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -179,8 +179,10 @@ func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE s
         shouldIncludeRE = true
     }
 
+    pathSepDot := fmt.Sprintf("%c.", os.PathSeparator)
+
     for _,fname:= range(allFilenames) {
-        if excludeDot && ( "." == path.Base(fname)[:1] || strings.Contains(fname,"/.") ) {
+        if excludeDot && ( "." == path.Base(fname)[:1] || strings.Contains(fname,pathSepDot) ) {
             continue
         }
         if shouldExcludeRE && excludeMatched.Match([]byte(fname)) {
