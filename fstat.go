@@ -243,15 +243,15 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
     var totalFileCount int64
 
     for _,e = range allEntries {
-	if onlyFiles && "F" != e.FileType {
-		continue
-	}
-	if onlyDirs && "D" != e.FileType {
-		continue
-	}
-	if onlyLinks && "L" != e.FileType {
-		continue
-	}
+        if onlyFiles && "F" != e.FileType {
+            continue
+        }
+        if onlyDirs && "D" != e.FileType {
+            continue
+        }
+        if onlyLinks && "L" != e.FileType {
+            continue
+        }
         if includeTotals && "F" ==  e.FileType {
             totalFileSize += e.Size
             totalFileCount++
