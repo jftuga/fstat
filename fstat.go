@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.5.0"
+const version = "2.5.1"
 
 // used for -do and -dn cmd line options
 const (
@@ -166,7 +166,8 @@ func roundToLocalTime(olderOrNewer int, modTime string) time.Time {
     // roundedModTime will be rounded down
     roundedModTime, err := time.Parse(dateFormat, modTime)
     if err != nil {
-        fmt.Fprintln(os.Stderr,"Error when parsing time:", modTime)
+        fmt.Fprintln(os.Stderr,"Error when parsing date:", modTime)
+        fmt.Fprintln(os.Stderr,"Date format should be  : YYYYMMDD")
         os.Exit(5)
     }
 
