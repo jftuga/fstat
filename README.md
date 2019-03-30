@@ -20,8 +20,12 @@ usage: fstat [options] [filename|or blank for STDIN]
 
   -M	add milliseconds to file time stamps
   -c	add comma thousands separator to file sizes
+  -dn string
+    	only include if date is equal or newer than given YYYYMMDD date
+  -do string
+    	only include if date is equal or older than given YYYYMMDD date
   -ed
-    	exclude-dot, exclude anything starting with a dot
+    	exclude-dot, exclude all dot files and directories
   -er string
     	exclude-regexp, exclude based on given regular expression; use .* instead of just *
   -f string
