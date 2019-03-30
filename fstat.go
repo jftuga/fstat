@@ -36,7 +36,14 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.4.5"
+const version = "2.5.0"
+
+// used for -do and -dn cmd line options
+const (
+    wantOlder = iota
+    wantNewer
+)
+const dateFormat = "20060102"
 
 type FileStat struct {
     FullName string `json:"fullname"`
@@ -134,6 +141,48 @@ func GetFileList(input *bufio.Scanner) ([]string) {
     return allFilenames
 }
 
+/*
+roundToLocalTime converts from UTC to Local time and rounds the day
+to either the start of the day or end of the day depending on the value of olderOrNewer
+
+Args:
+    olderOrNewer: should be either wantOlder or wantNewer, depending on which files you want
+
+    modTime: the time in YYYYMMDD format
+
+Returns:
+    a rounded time, in the current Local time zone
+
+    if wantOlder, modTime is rounded up to the last nanosecond of the given day
+    Example: given modTime of 20190325; then "2019-03-25 23:59:59.999999999 -0400 EDT" is returned
+    (when Local time zone is: Eastern Daylight Savings)
+
+    otherwise (wantNewer), modTime is rounded down to 1 nanosecond before the day starts
+    Example: given modTime of 20190325; then "2019-03-24 23:59:59.999999999 -0400 EDT" is returned
+    (when Local time zone is: Eastern Daylight Savings)
+*/
+func roundToLocalTime(olderOrNewer int, modTime string) time.Time {
+    // set up time.Time variables for dateOlder and dateNewer; -do and -dn
+    // roundedModTime will be rounded down
+    roundedModTime, err := time.Parse(dateFormat, modTime)
+    if err != nil {
+        fmt.Fprintln(os.Stderr,"Error when parsing time:", modTime)
+        os.Exit(5)
+    }
+
+    //fmt.Println("[start.1] roundedModTime: ", roundedModTime)
+    roundedModTime = roundedModTime.In(time.Local)
+    //fmt.Println("[start.2] roundedModTime: ", roundedModTime)
+    roundedModTime = time.Date(roundedModTime.Year(), roundedModTime.Month(), roundedModTime.Day(), 23, 59, 59, 999999999, roundedModTime.Location())
+    //fmt.Println("[start.3] roundedModTime: ", roundedModTime)
+
+    if olderOrNewer == wantOlder {
+        // add 1 day so that a file with a timestamp of 23:59:59 (of the same day) will be included
+        roundedModTime = roundedModTime.Add(time.Hour * 24)
+        //fmt.Println("[older.4] roundedModTime: ", roundedModTime)
+    }
+    return roundedModTime
+}
 
 /*
 GetFileInfo will read a list of file names, get the file's timestamp and size,
@@ -150,10 +199,14 @@ Args:
 
     includeRE: when set, only include based on this regular expression
 
+    dateNewer: when set, only include if date is equal or newer that the given YYYYMMDD formatted date
+
+    dateOlder: when set, only include if date is equal or older that the given YYYYMMDD formatted date
+
 Returns:
     a slice of type FileStat containing all files that were successfully examined
 */
-func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE string, includeRE string) ([]FileStat) {
+func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE string, includeRE string, dateNewer string, dateOlder string) ([]FileStat) {
     var allEntries []FileStat
     shouldExcludeRE := false
     shouldIncludeRE := false
@@ -179,12 +232,28 @@ func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE s
         shouldIncludeRE = true
     }
 
-    pathSepDot := fmt.Sprintf("%c.", os.PathSeparator)
+    // set up time.Time variables for dateOlder and dateNewer; -do and -dn
+    var olderModTime,newerModTime time.Time
+    useOlder := false
+    useNewer := false
+    if len(dateNewer) > 0 {
+        useNewer = true
+        newerModTime = roundToLocalTime(wantNewer, dateNewer)
+    }
+    if len(dateOlder) > 0 {
+        useOlder = true
+        olderModTime = roundToLocalTime(wantOlder, dateOlder)
+    }
 
+    // iterate through each file and get its os.Lstat()
+    pathSepDot := fmt.Sprintf("%c.", os.PathSeparator)
     for _,fname:= range(allFilenames) {
+        // check excludeDot; -ed
         if excludeDot && ( "." == path.Base(fname)[:1] || strings.Contains(fname,pathSepDot) ) {
             continue
         }
+
+        // check excludeRE and includeRE; -er and -ir
         if shouldExcludeRE && excludeMatched.Match([]byte(fname)) {
             continue
         }
@@ -193,11 +262,18 @@ func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE s
         }
 
         f,err := os.Lstat(fname)
-
         if err != nil {
             if !quiet {
                 fmt.Fprintf(os.Stderr, "Error: %s\n", err)
             }
+            continue
+        }
+
+        // check dateOlder and dateNewer; -do and -dn
+        if useOlder && f.ModTime().After(olderModTime) {
+            continue
+        }
+        if useNewer && f.ModTime().Before(newerModTime) {
             continue
         }
 
@@ -385,7 +461,7 @@ ValidateArgs verify all command line arguments.
 It will not allow multiple sort options (such as -ss and -sd)
 It will now allow multiple 'only' options (such as -of and -od)
 */
-func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool ) {
+func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool, dateOlder string, dateNewer string) {
     count := 0
     if argsSortSize { count++ }
     if argsSortSizeDesc { count++ }
@@ -424,6 +500,26 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
     if argsTotals && (argsOutputCSV || argsOutputHTML || argsOutputJSON) {
         fmt.Fprintf(os.Stderr,"Error: -t can not be used with: -oc, -oh, or -oj\n\n")
         os.Exit(2)
+    }
+
+    // make sure dateNewer is not newer than dateOlder
+    var older,newer time.Time
+    var err error
+    if len(dateOlder) > 0 && len(dateNewer) > 0 {
+        older,err = time.Parse(dateFormat, dateOlder)
+        if err != nil {
+            fmt.Fprintln(os.Stderr,"Error when parsing date for '-do':", dateOlder)
+            os.Exit(2)
+        }
+        newer,err = time.Parse(dateFormat, dateNewer)
+        if err != nil {
+            fmt.Fprintln(os.Stderr,"Error when parsing date for '-dn':", dateNewer)
+            os.Exit(2)
+        }
+        if older.After(newer) {
+            fmt.Fprintln(os.Stderr,"Error: '-dn' is newer than '-do'")
+            os.Exit(2)
+        }
     }
 }
 
@@ -479,6 +575,9 @@ func main() {
     argsExcludeRE := flag.String("er", "", "exclude-regexp, exclude based on given regular expression; use .* instead of just *")
     argsIncludeRE := flag.String("ir", "", "include-regexp, only include based on given regular expression; use .* instead of just *")
 
+    argsDateNewer := flag.String("dn", "", "only include if date is equal or newer than given YYYYMMDD date")
+    argsDateOlder := flag.String("do", "", "only include if date is equal or older than given YYYYMMDD date")
+
     flag.Usage = func() {
         pgmName := os.Args[0]
         if(strings.HasPrefix(os.Args[0],"./")) {
@@ -497,7 +596,7 @@ func main() {
         os.Exit(1)
     }
 
-    ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
+    ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsDateNewer, *argsDateOlder)
     args := flag.Args()
     var allFilenames []string
 
@@ -553,7 +652,7 @@ func main() {
         allFilenames = GetFileList(input)
     }
 
-    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE)
+    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE, *argsDateNewer, *argsDateOlder)
     SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
     RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
 }
