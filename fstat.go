@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.5.1"
+const version = "2.6.0"
 
 // used for -do and -dn cmd line options
 const (
@@ -204,10 +204,14 @@ Args:
 
     dateOlder: when set, only include if date is equal or older that the given YYYYMMDD formatted date
 
+    sizeSmaller: when set, only include if file size is equal or smaller that given value (in bytes)
+
+    sizeLarger: when set, only include if file size is equal or larger that given value (in bytes)
+
 Returns:
     a slice of type FileStat containing all files that were successfully examined
 */
-func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE string, includeRE string, dateNewer string, dateOlder string) ([]FileStat) {
+func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE string, includeRE string, dateNewer string, dateOlder string, sizeSmaller int64, sizeLarger int64) ([]FileStat) {
     var allEntries []FileStat
     shouldExcludeRE := false
     shouldIncludeRE := false
@@ -285,6 +289,15 @@ func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE s
             ftype = "D"
         } else if f.Mode() & os.ModeSymlink == os.ModeSymlink {
             ftype = "L"
+        }
+
+        // check file sizes; -szs and -szl
+        if sizeSmaller > 0 && f.Size() > sizeSmaller && "F" == ftype {
+            continue
+        }
+        // check file sizes; -szs and -szl
+        if sizeLarger > 0 && f.Size() < sizeLarger && "F" == ftype {
+            continue
         }
 
         entry := FileStat{FullName: fname, Size: f.Size(), ModTime: f.ModTime(), FileType: ftype}
@@ -462,7 +475,7 @@ ValidateArgs verify all command line arguments.
 It will not allow multiple sort options (such as -ss and -sd)
 It will now allow multiple 'only' options (such as -of and -od)
 */
-func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool, dateOlder string, dateNewer string) {
+func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool, dateOlder string, dateNewer string, sizeSmaller int64, sizeLarger int64) {
     count := 0
     if argsSortSize { count++ }
     if argsSortSizeDesc { count++ }
@@ -518,9 +531,15 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
             os.Exit(2)
         }
         if older.After(newer) {
-            fmt.Fprintln(os.Stderr,"Error: '-dn' is newer than '-do'")
+            fmt.Fprintln(os.Stderr,"Error: '-dn' date is newer than '-do'")
             os.Exit(2)
         }
+    }
+
+    // make sure sizeSmaller is not smaller than sizeLarger
+    if sizeSmaller > 0 && sizeSmaller < sizeLarger {
+        fmt.Fprintln(os.Stderr,"Error: '-szs' file size is smaller than '-szl'")
+        os.Exit(2)
     }
 }
 
@@ -579,6 +598,9 @@ func main() {
     argsDateNewer := flag.String("dn", "", "only include if date is equal or newer than given YYYYMMDD date")
     argsDateOlder := flag.String("do", "", "only include if date is equal or older than given YYYYMMDD date")
 
+    argsSizeSmaller := flag.Int64("szs", 0, "only include if file size is equal or smaller than given value (in bytes)")
+    argsSizeLarger := flag.Int64("szl", 0, "only include if file size is equal or larger than given value (in bytes)")
+
     flag.Usage = func() {
         pgmName := os.Args[0]
         if(strings.HasPrefix(os.Args[0],"./")) {
@@ -597,7 +619,7 @@ func main() {
         os.Exit(1)
     }
 
-    ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsDateNewer, *argsDateOlder)
+    ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsDateNewer, *argsDateOlder, *argsSizeSmaller, *argsSizeLarger)
     args := flag.Args()
     var allFilenames []string
 
@@ -653,7 +675,7 @@ func main() {
         allFilenames = GetFileList(input)
     }
 
-    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE, *argsDateNewer, *argsDateOlder)
+    allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE, *argsDateNewer, *argsDateOlder, *argsSizeSmaller, *argsSizeLarger)
     SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
     RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
 }
