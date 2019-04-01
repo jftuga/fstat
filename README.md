@@ -62,6 +62,10 @@ usage: fstat [options] [filename|or blank for STDIN]
     	sort by file name
   -ss
     	sort by file size
+  -szl int
+    	only include if file size is equal or larger than given value (in bytes)
+  -szs int
+    	only include if file size is equal or smaller than given value (in bytes)
   -t	append total file size and file count
   -v	show program version and then exit
 
