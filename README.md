@@ -69,7 +69,9 @@ usage: fstat [options] [filename|or blank for STDIN]
   -t	append total file size and file count
   -v	show program version and then exit
 
-Note: -er precedes -ir
+Notes:
+  (1) -er precedes -ir
+  (2) Use '(?i)' at the beginning of a regex to make it case insensitive
 ```
 
 ___
