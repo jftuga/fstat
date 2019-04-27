@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.0"
+const version = "2.6.1"
 
 // used for -do and -dn cmd line options
 const (
@@ -610,7 +610,10 @@ func main() {
         fmt.Fprintf(os.Stderr, "usage: %s [options] [filename|or blank for STDIN]\n", pgmName)
         fmt.Fprintf(os.Stderr, "       (this file should contain a list of files to process)\n\n")
         flag.PrintDefaults()
-        fmt.Fprintf(os.Stderr, "\nNote: -er precedes -ir\n\n")
+        fmt.Fprintf(os.Stderr, "\nNotes:\n")
+        fmt.Fprintf(os.Stderr, "  (1) -er precedes -ir\n")
+        fmt.Fprintf(os.Stderr, "  (2) Use '(?i)' at the beginning of a regex to make it case insensitive\n")
+        fmt.Fprintf(os.Stderr, "\n")
     }
 
     flag.Parse()
