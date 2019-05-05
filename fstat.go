@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.2"
+const version = "2.6.3"
 
 // used for -do and -dn cmd line options
 const (
@@ -664,6 +664,9 @@ func main() {
         if(len(allFilenames) == 0 ) {
             fmt.Fprintf(os.Stderr, "Error: -f did not match any file names.\n\n")
             os.Exit(3)
+        }
+        if(len(allFilenames) == 1 ) {
+            fmt.Fprintf(os.Stderr, "Warning: -f only matched one file name.\n\n")
         }
     } else { // using a filename or STDIN
         var input *bufio.Scanner
