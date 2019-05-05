@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.1"
+const version = "2.6.2"
 
 // used for -do and -dn cmd line options
 const (
@@ -661,12 +661,19 @@ func main() {
         for key,_ := range allGlobbedNames {
             allFilenames = append(allFilenames,key)
         }
+        if(len(allFilenames) == 0 ) {
+            fmt.Fprintf(os.Stderr, "Error: -f did not match any file names.\n\n")
+            os.Exit(3)
+        }
     } else { // using a filename or STDIN
         var input *bufio.Scanner
+        usingFile := ""
         if 0 == len(args) { // read from STDIN
             input = bufio.NewScanner(os.Stdin)
+            usingFile = "STDIN"
         } else { // read from filename
             fname := args[0]
+            usingFile = fname
             file, err := os.Open(fname)
             if err != nil {
                 fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -676,6 +683,10 @@ func main() {
             input = bufio.NewScanner(file)
         }
         allFilenames = GetFileList(input)
+        if(len(allFilenames) == 0 ) {
+            fmt.Fprintf(os.Stderr, "Error: No files were listed in '%s'\n\n", usingFile)
+            os.Exit(3)
+        }
     }
 
     allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE, *argsDateNewer, *argsDateOlder, *argsSizeSmaller, *argsSizeLarger)
