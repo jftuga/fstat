@@ -36,7 +36,7 @@ import (
     "github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.3"
+const version = "2.6.4"
 
 // used for -do and -dn cmd line options
 const (

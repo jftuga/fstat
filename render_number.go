@@ -164,7 +164,7 @@ func RenderFloat(format string, n float64) string {
     intf, fracf := math.Modf(n + renderFloatPrecisionRounders[precision])
 
     // generate integer part string
-    intStr := strconv.Itoa(int(intf))
+    intStr := strconv.FormatInt(int64(intf), 10)
 
     // add thousand separator if required
     if len(thousandStr) > 0 {
