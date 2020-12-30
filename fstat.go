@@ -37,7 +37,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.6"
+const version = "2.6.7"
 const minTermWidth = 47
 
 // used for -do and -dn cmd line options
@@ -336,15 +336,18 @@ Args:
 
     includeTotals: when set, append a line include summed file sizes and number of files (-t cmd line option)
 
-    onlyFiles: when set, only ouput files and exclude directories, symbolic links (-of cmd line option)
+    onlyFiles: when set, only output files and exclude directories, symbolic links (-of cmd line option)
 
-    onlyDirs: when set, only ouput directories and exclude files, symbolic links (-od cmd line option)
+    onlyDirs: when set, only output directories and exclude files, symbolic links (-od cmd line option)
 
-    onlyLinks: when set, only ouput symbolic links and exclude files, directories (-ol cmd line option)
+    onlyLinks: when set, only output symbolic links and exclude files, directories (-ol cmd line option)
 
-    longFileNames: when set, do not use ellipses to shorten file names (-lone cmd line option)
+	longFileNames: when set, do not use ellipses to shorten file names (-long cmd line option)
+
+	longWidth: when set, use this at the max line width (-longwidth cmd line option)
+
 */
-func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool, outputCSV bool, outputHTML bool, outputJSON bool, longFileNames bool) {
+func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool, outputCSV bool, outputHTML bool, outputJSON bool, longFileNames bool, longWidth int) {
 	var allRows [][]string
 	var e FileStat
 	var fsize string
@@ -480,18 +483,14 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
 	if len(allRows) > 0 {
 		maxWidth := 3000
 		if longFileNames == false {
-			maxWidth = termsize.GetTerminalColumns() - minTermWidth
+			maxWidth = termsize.Width() - minTermWidth + 2
+			if longWidth > 0 {
+				maxWidth = longWidth - minTermWidth + 2
+			}
 			if maxWidth <= 0 {
 				maxWidth = 1
 			}
 		}
-		/*
-		   // still considering this:
-		   // import "github.com/mattn/go-isatty"
-		   if !isatty.IsTerminal(os.Stdout.Fd()) {
-		       maxWidth = 3000
-		   }
-		*/
 
 		allRows = shortenFileName(allRows, maxWidth)
 		table := tablewriter.NewWriter(os.Stdout)
@@ -509,7 +508,7 @@ ValidateArgs verify all command line arguments.
 It will not allow multiple sort options (such as -ss and -sd)
 It will now allow multiple 'only' options (such as -of and -od)
 */
-func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool, dateOlder string, dateNewer string, sizeSmaller int64, sizeLarger int64) {
+func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool, argsSortModTimeDesc bool, argsSortName bool, argsSortNameDesc bool, argsSortNameCaseInsen bool, argsSortNameCaseInsenDesc bool, argsOnlyFiles bool, argsOnlyDirs bool, argsOnlyLinks bool, argsTotals bool, argsOutputCSV bool, argsOutputHTML bool, argsOutputJSON bool, dateOlder string, dateNewer string, sizeSmaller int64, sizeLarger int64, longFileNames bool, longWidth int) {
 	count := 0
 	if argsSortSize {
 		count++
@@ -603,6 +602,12 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
 		fmt.Fprintln(os.Stderr, "Error: '-szs' file size is smaller than '-szl'")
 		os.Exit(2)
 	}
+
+	// these are mutually exclusive
+	if longFileNames == true && longWidth > 0 {
+		fmt.Fprintln(os.Stderr, "Error: '-long' and '-longwidth' are mutually exclusive")
+		os.Exit(2)
+	}
 }
 
 /*
@@ -672,9 +677,9 @@ func main() {
 	argsOnlyDirs := flag.Bool("id", false, "include only directories")
 	argsOnlyLinks := flag.Bool("il", false, "include only symbolic links")
 
-	argsOutputCSV := flag.Bool("oc", false, "ouput to CSV format")
-	argsOutputHTML := flag.Bool("oh", false, "ouput to HTML format")
-	argsOutputJSON := flag.Bool("oj", false, "ouput to JSON format")
+	argsOutputCSV := flag.Bool("oc", false, "output to CSV format")
+	argsOutputHTML := flag.Bool("oh", false, "output to HTML format")
+	argsOutputJSON := flag.Bool("oj", false, "output to JSON format")
 
 	argsFilenames := flag.String("f", "", "use these files instead of from a file or STDIN, can include wildcards")
 	argsExcludeDot := flag.Bool("ed", false, "exclude-dot, exclude all dot files and directories")
@@ -687,7 +692,8 @@ func main() {
 	argsSizeSmaller := flag.Int64("szs", 0, "only include if file size is equal or smaller than given value (in bytes)")
 	argsSizeLarger := flag.Int64("szl", 0, "only include if file size is equal or larger than given value (in bytes)")
 
-	argsLongFileNames := flag.Bool("long", false, "Don't use ellipses for long file names; useful when piping to less or redirection")
+	argsLongFileNames := flag.Bool("long", false, "Don't use ellipses for long file names; useful when piping or using redirection")
+	argsLongWidth := flag.Int("longwidth", 0, "Set max width; Useful when piping or using redirection")
 
 	flag.Usage = func() {
 		pgmName := os.Args[0]
@@ -710,7 +716,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsDateNewer, *argsDateOlder, *argsSizeSmaller, *argsSizeLarger)
+	ValidateArgs(*argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsTotals, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsDateNewer, *argsDateOlder, *argsSizeSmaller, *argsSizeLarger, *argsLongFileNames, *argsLongWidth)
 	args := flag.Args()
 	var allFilenames []string
 
@@ -782,5 +788,5 @@ func main() {
 
 	allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE, *argsDateNewer, *argsDateOlder, *argsSizeSmaller, *argsSizeLarger)
 	SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
-	RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsLongFileNames)
+	RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsLongFileNames, *argsLongWidth)
 }
