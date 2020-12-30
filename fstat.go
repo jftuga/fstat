@@ -37,7 +37,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.5"
+const version = "2.6.6"
+const minTermWidth = 47
 
 // used for -do and -dn cmd line options
 const (
@@ -340,8 +341,10 @@ Args:
     onlyDirs: when set, only ouput directories and exclude files, symbolic links (-od cmd line option)
 
     onlyLinks: when set, only ouput symbolic links and exclude files, directories (-ol cmd line option)
+
+    longFileNames: when set, do not use ellipses to shorten file names (-lone cmd line option)
 */
-func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool, outputCSV bool, outputHTML bool, outputJSON bool) {
+func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, addMilliseconds bool, includeTotals bool, onlyFiles bool, onlyDirs bool, onlyLinks bool, outputCSV bool, outputHTML bool, outputJSON bool, longFileNames bool) {
 	var allRows [][]string
 	var e FileStat
 	var fsize string
@@ -475,7 +478,21 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
 
 	// by default, output to STDOUT
 	if len(allRows) > 0 {
-		maxWidth := termsize.GetTerminalColumns() - 47
+		maxWidth := 3000
+		if longFileNames == false {
+			maxWidth = termsize.GetTerminalColumns() - minTermWidth
+			if maxWidth <= 0 {
+				maxWidth = 1
+			}
+		}
+		/*
+		   // still considering this:
+		   // import "github.com/mattn/go-isatty"
+		   if !isatty.IsTerminal(os.Stdout.Fd()) {
+		       maxWidth = 3000
+		   }
+		*/
+
 		allRows = shortenFileName(allRows, maxWidth)
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetAutoWrapText(false)
@@ -670,6 +687,8 @@ func main() {
 	argsSizeSmaller := flag.Int64("szs", 0, "only include if file size is equal or smaller than given value (in bytes)")
 	argsSizeLarger := flag.Int64("szl", 0, "only include if file size is equal or larger than given value (in bytes)")
 
+	argsLongFileNames := flag.Bool("long", false, "Don't use ellipses for long file names; useful when piping to less or redirection")
+
 	flag.Usage = func() {
 		pgmName := os.Args[0]
 		if strings.HasPrefix(os.Args[0], "./") {
@@ -763,5 +782,5 @@ func main() {
 
 	allEntries := GetFileInfo(allFilenames, *argsQuiet, *argsExcludeDot, *argsExcludeRE, *argsIncludeRE, *argsDateNewer, *argsDateOlder, *argsSizeSmaller, *argsSizeLarger)
 	SortAllEntries(allEntries, *argsSortSize, *argsSortSizeDesc, *argsSortModTime, *argsSortModTimeDesc, *argsSortName, *argsSortNameDesc, *argsSortNameCaseInsen, *argsSortNameCaseInsenDesc)
-	RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON)
+	RenderAllEntries(allEntries, *argsCommas, *argsMebibytes, *argsMilliseconds, *argsTotals, *argsOnlyFiles, *argsOnlyDirs, *argsOnlyLinks, *argsOutputCSV, *argsOutputHTML, *argsOutputJSON, *argsLongFileNames)
 }
