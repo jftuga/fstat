@@ -47,6 +47,7 @@ const (
 )
 const dateFormat = "20060102"
 
+// FileStat - metadata for each entry
 type FileStat struct {
 	FullName string    `json:"fullname"`
 	Size     int64     `json:"size"`
@@ -116,9 +117,8 @@ func sortName(entry []FileStat, ascending bool) {
 	sort.Slice(entry, func(i, j int) bool {
 		if ascending {
 			return entry[i].FullName < entry[j].FullName
-		} else {
-			return entry[i].FullName > entry[j].FullName
 		}
+		return entry[i].FullName > entry[j].FullName
 	})
 }
 
@@ -133,9 +133,8 @@ func sortNameCaseInsensitive(entry []FileStat, ascending bool) {
 	sort.Slice(entry, func(i, j int) bool {
 		if ascending {
 			return strings.ToLower(entry[i].FullName) < strings.ToLower(entry[j].FullName)
-		} else {
-			return strings.ToLower(entry[i].FullName) > strings.ToLower(entry[j].FullName)
 		}
+		return strings.ToLower(entry[i].FullName) > strings.ToLower(entry[j].FullName)
 	})
 }
 
@@ -752,7 +751,7 @@ func main() {
 		}
 		// from the allGlobbedNames map, create the allFilenames slice
 		// (which is the file goal)
-		for key, _ := range allGlobbedNames {
+		for key := range allGlobbedNames {
 			allFilenames = append(allFilenames, key)
 		}
 		if len(allFilenames) == 0 {
