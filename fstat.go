@@ -37,7 +37,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.7"
+const version = "2.6.8"
 const minTermWidth = 47
 
 // used for -do and -dn cmd line options
@@ -482,7 +482,7 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
 	if len(allRows) > 0 {
 		maxWidth := 3000
 		if longFileNames == false {
-			maxWidth = termsize.Width() - minTermWidth + 2
+			maxWidth = termsize.Width() - minTermWidth
 			if longWidth > 0 {
 				maxWidth = longWidth - minTermWidth + 2
 			}
