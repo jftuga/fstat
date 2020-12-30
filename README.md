@@ -38,6 +38,8 @@ usage: fstat [options] [filename|or blank for STDIN]
     	include only symbolic links
   -ir string
     	include-regexp, only include based on given regular expression; use .* instead of just *
+  -long
+    	Don't use ellipses for long file names; useful when piping to less or redirection
   -m	convert file sizes to mebibytes
   -oc
     	ouput to CSV format
