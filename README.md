@@ -39,14 +39,16 @@ usage: fstat [options] [filename|or blank for STDIN]
   -ir string
     	include-regexp, only include based on given regular expression; use .* instead of just *
   -long
-    	Don't use ellipses for long file names; useful when piping to less or redirection
+    	Don't use ellipses for long file names; useful when piping or using redirection
+  -longwidth int
+    	Set max width; Useful when piping or using redirection
   -m	convert file sizes to mebibytes
   -oc
-    	ouput to CSV format
+    	output to CSV format
   -oh
-    	ouput to HTML format
+    	output to HTML format
   -oj
-    	ouput to JSON format
+    	output to JSON format
   -q	do not display file errors
   -sD
     	sort by file modified date, newest first
