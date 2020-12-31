@@ -37,8 +37,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.8"
-const minTermWidth = 47
+const version = "2.6.9"
+const minTermWidth = 49
 
 // used for -do and -dn cmd line options
 const (
