@@ -15,4 +15,5 @@ fstat
 .??*~
 dist/
 test/
+.idea/
 
