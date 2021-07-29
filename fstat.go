@@ -9,7 +9,7 @@ Get info for a list of files across multiple directories
 To compile:
 go build -ldflags="-s -w" fstat.go render_number.go
 
-MIT License; Copyright (c) 2019 John Taylor
+MIT License; Copyright (c) 2021 John Taylor
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
@@ -37,7 +37,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
-const version = "2.6.9"
+const version = "2.6.10"
 const minTermWidth = 49
 
 // used for -do and -dn cmd line options
@@ -176,6 +176,7 @@ Returns:
     Example: given modTime of 20190325; then "2019-03-24 23:59:59.999999999 -0400 EDT" is returned
     (when Local time zone is: Eastern Daylight Savings)
 */
+//goland:noinspection GoUnhandledErrorResult
 func roundToLocalTime(olderOrNewer int, modTime string) time.Time {
 	// set up time.Time variables for dateOlder and dateNewer; -do and -dn
 	// roundedModTime will be rounded down
@@ -297,7 +298,7 @@ func GetFileInfo(allFilenames []string, quiet bool, excludeDot bool, excludeRE s
 			continue
 		}
 
-		var ftype string = "?"
+		var ftype = "?"
 		if f.Mode().IsRegular() {
 			ftype = "F"
 		} else if f.IsDir() {
@@ -414,15 +415,25 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
 			averageFileSize = float64(totalFileSize / totalFileCount)
 		}
 
+		var averageFilesPerDir float64
+		if totalFileCount > 0 && totalDirCount > 0 {
+			averageFilesPerDir = float64(totalFileCount / totalDirCount)
+		}
+
 		asize := fmt.Sprintf("%.0f", averageFileSize)
+		dsize := fmt.Sprintf("%.0f", averageFilesPerDir)
 		if addCommas {
 			asize = RenderFloat("#,###.", averageFileSize)
+			dsize = RenderFloat("#,###.", averageFilesPerDir)
 		}
 		if len(allRows) > 0 {
 			allRows = append(allRows, []string{"", asize, " ", fmt.Sprintf("(average size for %d files)", totalFileCount)})
 		}
 		if totalDirCount > 0 {
 			allRows = append(allRows, []string{"", fmt.Sprintf("%d", totalDirCount), " ", "(num of directories)"})
+		}
+		if averageFilesPerDir > 0 {
+			allRows = append(allRows, []string{"", dsize, " ", "(average num of files per directory)"})
 		}
 		if totalSymLinkCount > 0 {
 			allRows = append(allRows, []string{"", fmt.Sprintf("%d", totalSymLinkCount), " ", "(num of sym links)"})
@@ -582,6 +593,7 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
 	if len(dateOlder) > 0 && len(dateNewer) > 0 {
 		older, err = time.Parse(dateFormat, dateOlder)
 		if err != nil {
+			//goland:noinspection GoUnhandledErrorResult
 			fmt.Fprintln(os.Stderr, "Error when parsing date for '-do':", dateOlder)
 			os.Exit(2)
 		}
@@ -591,6 +603,7 @@ func ValidateArgs(argsSortSize bool, argsSortSizeDesc bool, argsSortModTime bool
 			os.Exit(2)
 		}
 		if older.After(newer) {
+			//goland:noinspection GoUnhandledErrorResult
 			fmt.Fprintln(os.Stderr, "Error: '-dn' date is newer than '-do'")
 			os.Exit(2)
 		}
