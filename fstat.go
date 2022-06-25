@@ -497,8 +497,8 @@ func RenderAllEntries(allEntries []FileStat, addCommas bool, convertToMiB bool, 
 			if longWidth > 0 {
 				maxWidth = longWidth - minTermWidth + 2
 			}
-			if maxWidth <= 0 {
-				maxWidth = 3000
+			if maxWidth < minTermWidth {
+				maxWidth = minTermWidth
 			}
 		}
 
