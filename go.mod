@@ -10,5 +10,5 @@ require (
 
 require (
 	github.com/mattn/go-runewidth v0.0.9 // indirect
-	golang.org/x/sys v0.0.0-20210216224549-f992740a1bac // indirect
+	golang.org/x/sys v0.1.0 // indirect
 )
