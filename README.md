@@ -5,7 +5,7 @@
 The [Releases Page](https://github.com/jftuga/fstat/releases) contains binaries for Windows, MacOS, Linux and FreeBSD.
 
 Homebrew (MacOS / Linux):
-* * `brew tap jftuga/homebrew-tap; brew update; brew install jftuga/tap/fstat`
+* `brew tap jftuga/homebrew-tap; brew update; brew install jftuga/tap/fstat`
 
 
 For the `TYPE` column (see examples below):
